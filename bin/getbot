@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+var path = require('path'),
+    fs = require('fs'),
+    sys = require('util'),
+    getbot = require('../lib/getbot');
+
+console.log("Hello!");
