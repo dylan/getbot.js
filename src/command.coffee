@@ -3,6 +3,7 @@ program = require 'commander'
 cluster = require 'cluster'
 http = require 'http'
 url = require 'url'
+util = require 'util'
 
 exports.run = ->
   program
@@ -10,12 +11,12 @@ exports.run = ->
     .usage('[options] <URL>')
     .option('-d, --destination [path]', 'the destination for the downloaded file','.')
     .option('-c, --connections [number]', 'max connections to try', parseInt, 3)
-    .option('-u, --username [user]', 'username used for basic auth')
-    .option('-p, --password [password', 'password used for basic auth')
+    .option('-u, --user [string]', 'username used for basic auth')
+    .option('-p, --pass [string]', 'password used for basic auth')
     .parse(process.argv)
   
     if program.args?.length is 1
-      console.log "#{program.args[0]}"
+      init "#{program.args[0]}"
     else
       return console.log program.helpInformation()
 
@@ -24,16 +25,17 @@ exports.run = ->
       host: path.host
       port: 80
       path: path.pathname
+      auth: path.auth
 
     req.on 'response', (response) ->
       if response.headers['www-authenticate']
-        if (! program.username || ! program.password)
-          if (! program.auth)
-            console.log 'ERROR: You must provided a username and password for basic auth requests.'
-          else
-            auth = program.auth
+        if !program.user or !program.pass 
+          util.log "#{program.user} : #{program.pass}"
+          console.log 'ERROR: You must provided a username and password for basic auth requests.'
+          process.exit(0)
         else
-          auth = program.username + ':' + program.password
+          auth = program.user + ':' + program.pass
+        
 
       options = 
         host: path.host
@@ -47,7 +49,8 @@ exports.run = ->
 
       _req.on 'response', (response) ->
         response.on 'data', (data) ->
-          console.log 'Chunk size: ' + (data.length / 1000).toFixed(2) + ' kilobytes'
+          console.log 'Chunk size: ' + (data.length).toFixed(2) + ' kilobytes'
+          process.exit(0)
 
       _req.on 'error', (err) ->
         console.log err
@@ -60,8 +63,4 @@ exports.run = ->
     req.end()
 
 init = (path) ->
-  try
-    growl = require 'growl'
-    growl "gobot: downloading #{path} max-connections: #{program.connections}"
-  catch error
-    console.log "gobot: #{path} max-connections: #{program.connections}"
+    console.log "getbot: #{path} max-connections: #{program.connections}"
