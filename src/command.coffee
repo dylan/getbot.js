@@ -4,7 +4,7 @@ cluster = require 'cluster'
 http = require 'http'
 url = require 'url'
 util = require 'util'
-Getbot= require '../lib/getbot'
+Getbot = require '../lib/getbot'
 
 exports.run = ->
   
