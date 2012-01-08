@@ -37,7 +37,8 @@ exports.makeReadable = (bytes) ->
   while bytes >= 1024
     unit++
     bytes = bytes/1024
-  return "#{bytes.toFixed(1)} #{units[unit]}"
+    precision = if unit > 2 then 2 else 1
+  return "#{bytes.toFixed(precision)} #{units[unit]}"
     
 module.exports = Getbot
     
