@@ -32,9 +32,12 @@ class Getbot
     options.auth = "#{user}:#{pass}" if !options.auth
     
     filename = decodeURI(url.parse(address).pathname.split("/").pop())
+    fileExt = filename.split(".").pop()
+    filePref = filename.split(".").shift()
+    newFilename = "#{filePref}.getbot"
     #Try and alloc hdd space (not sure if necessary)
     try
-      fs.open filename,'w', (err, fd) ->
+      fs.open newFilename,'w', (err, fd) ->
         fs.truncate fd, size
     catch error
       console.log "Not enough space."
@@ -42,7 +45,7 @@ class Getbot
     
     console.log "Downloading #{filename}(#{makeReadable(size)})..."
     
-    file = fs.createWriteStream(filename)
+    file = fs.createWriteStream(newFilename)
 
     start = Date.now()
     
@@ -54,7 +57,8 @@ class Getbot
     .on 'end', () ->
       file.end()
       duration = Date.now() - start
-      console.log "Download of #{filename} completed. It took #{(duration/1000).toFixed(1)} seconds."
+      fs.rename(newFilename,filename)
+      console.log "Download completed. It took #{(duration/1000).toFixed(1)} seconds."
   
   status: (status) ->
     console.log("#{status}")
