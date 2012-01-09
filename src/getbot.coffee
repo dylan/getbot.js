@@ -15,14 +15,47 @@ class Getbot
     req = request.head options, (error, response, body) ->
       if !error
         switch response.statusCode
-          when 200 then console.log makeReadable(response.headers['content-length'])
+          when 200
+            size = response.headers['content-length']
+            Getbot.download address, user, pass, size
           when 401 then console.log "401 Unauthorized"
           else console.log "#{response.statusCode}"
       else
         console.log "#{error}"
     
     req.end()
+  
+  @download: (address, user, pass, size) ->
+    options =
+      uri: address
+      
+    options.auth = "#{user}:#{pass}" if !options.auth
     
+    filename = decodeURI(url.parse(address).pathname.split("/").pop())
+    #Try and alloc hdd space (not sure if necessary)
+    try
+      fs.open filename,'w', (err, fd) ->
+        fs.truncate fd, size
+    catch error
+      console.log "Not enough space."
+      return
+    
+    console.log "Downloading #{filename}(#{makeReadable(size)})..."
+    
+    file = fs.createWriteStream(filename)
+
+    start = Date.now()
+    
+    req = request.get options, (error, response, body) =>
+      if error
+        console.log error      
+    req.on 'data', (data) ->
+      file.write data
+    .on 'end', () ->
+      file.end()
+      duration = Date.now() - start
+      console.log "Download of #{filename} completed. It took #{(duration/1000).toFixed(1)} seconds."
+  
   status: (status) ->
     console.log("#{status}")
 
