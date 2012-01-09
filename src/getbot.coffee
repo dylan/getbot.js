@@ -1,5 +1,6 @@
 util  = require 'util'
 fs    = require 'fs'
+path  = require 'path'
 http  = require 'http'
 url   = require 'url'
 request = require 'request'
@@ -32,9 +33,9 @@ class Getbot
     options.auth = "#{user}:#{pass}" if !options.auth
     
     filename = decodeURI(url.parse(address).pathname.split("/").pop())
-    fileExt = filename.split(".").pop()
-    filePref = filename.split(".").shift()
-    newFilename = "#{filePref}.getbot"
+    fileExt = path.extname filename
+    fileBasename = path.basename(filename, fileExt)
+    newFilename = "#{fileBasename}.getbot"
     #Try and alloc hdd space (not sure if necessary)
     try
       fs.open newFilename,'w', (err, fd) ->
