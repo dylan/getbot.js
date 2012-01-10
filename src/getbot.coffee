@@ -12,15 +12,28 @@ class Getbot
   constructor: (address, user, pass) ->
     options =
       uri: address
-      
+      headers: {}
+      method: 'HEAD'
     options.auth = "#{user}:#{pass}" if !options.auth
-      
-    req = request.head options, (error, response, body) ->
+    
+    downloads = 2
+    req = request options, (error, response, body) ->
       if !error
         switch response.statusCode
           when 200
             size = response.headers['content-length']
-            Getbot.download address, user, pass, size
+            filename = decodeURI(url.parse(address).pathname.split("/").pop())
+            fileExt = path.extname filename
+            fileBasename = path.basename(filename, fileExt)
+            newFilename = "#{fileBasename}.getbot"
+            #Try and alloc hdd space (not sure if necessary)
+            try
+              fs.open newFilename,'w', (err, fd) ->
+                fs.truncate fd, size
+            catch error
+              console.log "Not enough space."
+              return
+            Getbot.startParts(options, size, 5, Getbot.download)
           when 401 then console.log "401 Unauthorized"
           else console.log "#{response.statusCode}"
       else
@@ -28,61 +41,57 @@ class Getbot
     
     req.end()
   
-  @download: (address, user, pass, size) ->
-    options =
-      uri: address
-      
-    options.auth = "#{user}:#{pass}" if !options.auth
-    
-    filename = decodeURI(url.parse(address).pathname.split("/").pop())
+  @download: (options, offset, end) ->
+    # console.log ""
+    filename = decodeURI(url.parse(options.uri).pathname.split("/").pop())
     fileExt = path.extname filename
     fileBasename = path.basename(filename, fileExt)
     newFilename = "#{fileBasename}.getbot"
-    #Try and alloc hdd space (not sure if necessary)
-    try
-      fs.open newFilename,'w', (err, fd) ->
-        fs.truncate fd, size
-    catch error
-      console.log "Not enough space."
-      return
-    
-    console.log "Downloading #{filename}(#{makeReadable(size)})..."
+    console.log "Downloading #{filename} range #{offset} - #{end} (#{makeReadable(end-offset)})..."
     
     downloadStart = new Date
-    file = fs.createWriteStream(newFilename)
-    #downloadTimer = setInterval Getbot.downloadRate, 1000
-
-    req = request.get options, (error, response, body) =>
+    fops =
+      flags: 'r+'
+      start: offset
+    file = fs.createWriteStream(newFilename,fops)
+    options.headers = {}
+    options.method = 'GET'
+    options.headers["range"]= "bytes=#{offset}-#{end}"
+    # console.log "#{util.inspect options}"
+    req = request options, (error, response, body) =>
+      
       if error
-        console.log error 
+        console.log error
 
-    bar = new progressbar '   downloading [:bar] :percent :eta | :rate', {
-      complete: '=',
-      incomplete: ' ',
-      width: 20,
-      total: parseInt size, 10
-    }
+      # bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate', {
+      #   complete: '=',
+      #   incomplete: ' ',
+      #   width: 20,
+      #   total: parseInt end, 10
+      # }
 
     req.on 'data', (data) ->
-
-      Getbot.totalDownloaded += data.length
-      bar.tick(data.length, {'rate': Getbot.downloadRate downloadStart})
+      # Getbot.totalDownloaded += data.length
+      # bar.tick(data.length, {'rate': Getbot.downloadRate downloadStart})
       file.write data
     .on 'end', () ->
       file.end()
-      duration = Date.now() - downloadStart
+      # duration = Date.now() - downloadStart
       fs.rename(newFilename,filename)
-      console.log "Download completed. It took #{(duration/1000).toFixed(1)} seconds."
-
-      #clearInterval downloadTimer
+      # console.log "\nDownload completed.\nIt took #{(duration/1000).toFixed(1)} seconds."
+      console.log "Done!"
   
   @downloadRate: (start) ->
     makeReadable(@totalDownloaded / (new Date - start) * 1024) + '/s'
-    #Getbot.lastDownloaded = Getbot.totalDownloaded
-    #rate
 
-    #Getbot.status rate
-
+  @startParts: (options, bytes, parts,callback) ->
+    partSize = Math.ceil(1 * bytes/parts)
+    i = 0
+    while i < parts
+      console.log "Starting part #{i}"
+      callback options, partSize*i, Math.min(partSize*(i+1)-1,bytes-1)
+      i++
+      
   @status: (status) ->
     process.stdout.write '\r\033[2K' + status
 
