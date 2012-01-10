@@ -6,8 +6,9 @@ url   = require 'url'
 request = require 'request'
 
 class Getbot
-  constructor: (address, user, pass) ->
+  @totalDownloaded = @lastDownloaded = 0
 
+  constructor: (address, user, pass) ->
     options =
       uri: address
       
@@ -49,22 +50,33 @@ class Getbot
     file = fs.createWriteStream(newFilename)
 
     start = Date.now()
+
+    downloadTimer = setInterval Getbot.downloadRate, 1000
     
     req = request.get options, (error, response, body) =>
       if error
         console.log error      
     req.on 'data', (data) ->
+      Getbot.totalDownloaded += data.length
       file.write data
     .on 'end', () ->
       file.end()
       duration = Date.now() - start
       fs.rename(newFilename,filename)
       console.log "Download completed. It took #{(duration/1000).toFixed(1)} seconds."
-  
-  status: (status) ->
-    console.log("#{status}")
 
-  save: (buffer) ->
+      clearInterval downloadTimer
+  
+  @downloadRate: ->
+    rate = makeReadable Getbot.totalDownloaded-Getbot.lastDownloaded
+    Getbot.lastDownloaded = Getbot.totalDownloaded
+
+    Getbot.status rate
+
+  @status: (status) ->
+    process.stdout.write '\r\033[2K' + status
+
+  @save: (buffer) ->
     console.log("Writing file...")
 
 makeReadable = (bytes) ->
