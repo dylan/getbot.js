@@ -18,7 +18,8 @@
     "growl": "1.4.1",
     "colors": "0.6.0-1",
     "commander": "0.5.1",
-    "request": "2.9.3"
+    "request": "2.9.3",
+    "progress": "0.0.4"
   },
   "devDependencies": {}
 }

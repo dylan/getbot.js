@@ -4,6 +4,7 @@ path  = require 'path'
 http  = require 'http'
 url   = require 'url'
 request = require 'request'
+progressbar = require 'progress'
 
 class Getbot
   @totalDownloaded = @lastDownloaded = 0
@@ -47,17 +48,25 @@ class Getbot
     
     console.log "Downloading #{filename}(#{makeReadable(size)})..."
     
+    downloadStart = new Date
     file = fs.createWriteStream(newFilename)
+    #downloadTimer = setInterval Getbot.downloadRate, 1000
 
-    start = Date.now()
-
-    downloadTimer = setInterval Getbot.downloadRate, 1000
-    
     req = request.get options, (error, response, body) =>
       if error
-        console.log error      
+        console.log error 
+
+    bar = new progressbar '   downloading [:bar] :percent :eta | :rate', {
+      complete: '=',
+      incomplete: ' ',
+      width: 20,
+      total: parseInt size, 10
+    }
+
     req.on 'data', (data) ->
+
       Getbot.totalDownloaded += data.length
+      bar.tick(data.length, {'rate': Getbot.downloadRate downloadStart})
       file.write data
     .on 'end', () ->
       file.end()
@@ -65,13 +74,14 @@ class Getbot
       fs.rename(newFilename,filename)
       console.log "Download completed. It took #{(duration/1000).toFixed(1)} seconds."
 
-      clearInterval downloadTimer
+      #clearInterval downloadTimer
   
-  @downloadRate: ->
-    rate = makeReadable Getbot.totalDownloaded-Getbot.lastDownloaded
-    Getbot.lastDownloaded = Getbot.totalDownloaded
+  @downloadRate: (start) ->
+    makeReadable(@totalDownloaded / (new Date - start) * 1024) + '/s'
+    #Getbot.lastDownloaded = Getbot.totalDownloaded
+    #rate
 
-    Getbot.status rate
+    #Getbot.status rate
 
   @status: (status) ->
     process.stdout.write '\r\033[2K' + status
