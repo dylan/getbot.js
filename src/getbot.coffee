@@ -70,7 +70,7 @@ class Getbot
       file.write data
     .on 'end', () ->
       file.end()
-      duration = Date.now() - start
+      duration = Date.now() - downloadStart
       fs.rename(newFilename,filename)
       console.log "Download completed. It took #{(duration/1000).toFixed(1)} seconds."
 
