@@ -8,6 +8,7 @@ progressbar = require 'progress'
 
 class Getbot
   @totalDownloaded = @lastDownloaded = 0
+  @bar
 
   constructor: (address, user, pass) ->
     options =
@@ -26,6 +27,14 @@ class Getbot
             fileExt = path.extname filename
             fileBasename = path.basename(filename, fileExt)
             newFilename = "#{fileBasename}.getbot"
+
+            Getbot.bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate', {
+              complete: '=',
+              incomplete: ' ',
+              width: 20,
+              total: parseInt size, 10
+            }
+            
             #Try and alloc hdd space (not sure if necessary)
             try
               fs.open newFilename,'w', (err, fd) ->
@@ -47,34 +56,31 @@ class Getbot
     fileExt = path.extname filename
     fileBasename = path.basename(filename, fileExt)
     newFilename = "#{fileBasename}.getbot"
-    console.log "Downloading #{filename} range #{offset} - #{end} (#{makeReadable(end-offset)})..."
+
+    #console.log "Downloading #{filename} range #{offset} - #{end} (#{makeReadable(end-offset)})..."
     
     downloadStart = new Date
     fops =
       flags: 'r+'
       start: offset
+    
     file = fs.createWriteStream(newFilename,fops)
+    
     options.headers = {}
     options.method = 'GET'
     options.headers["range"]= "bytes=#{offset}-#{end}"
-    # console.log "#{util.inspect options}"
+
     req = request options, (error, response, body) =>
       
       if error
         console.log error
 
-      # bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate', {
-      #   complete: '=',
-      #   incomplete: ' ',
-      #   width: 20,
-      #   total: parseInt end, 10
-      # }
-
     req.on 'data', (data) ->
-      # Getbot.totalDownloaded += data.length
-      # bar.tick(data.length, {'rate': Getbot.downloadRate downloadStart})
+      Getbot.totalDownloaded += data.length
+      Getbot.bar.tick(data.length, {'rate': Getbot.downloadRate downloadStart})
       file.write data
-    .on 'end', () ->
+    
+    req.on 'end', () ->
       file.end()
       # duration = Date.now() - downloadStart
       fs.rename(newFilename,filename)
@@ -88,7 +94,7 @@ class Getbot
     partSize = Math.ceil(1 * bytes/parts)
     i = 0
     while i < parts
-      console.log "Starting part #{i}"
+      console.log "Starting part #{i+1}"
       callback options, partSize*i, Math.min(partSize*(i+1)-1,bytes-1)
       i++
       
