@@ -31,8 +31,7 @@ exports.run = ->
         }
 
       getbot.on 'data', (data, rate) ->
-        bar.tick(data, {'rate': rate})
-        #console.log rate
+        bar.tick(data.length, {'rate': rate})
       return
     else
       return console.log program.helpInformation()
