@@ -5,6 +5,7 @@ http = require 'http'
 url = require 'url'
 util = require 'util'
 Getbot = require '../lib/getbot'
+progressbar = require 'progress'
 
 exports.run = ->
   
@@ -19,6 +20,20 @@ exports.run = ->
   
     if program.args?.length is 1
       getbot = new Getbot program.args[0], program.user, program.pass
+      bar = null
+
+      getbot.on 'downloadStart', () ->
+        bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate', {
+          complete: '=',
+          incomplete: ' ',
+          width: 20,
+          total: parseInt getbot.size, 10
+        }
+
+      getbot.on 'data', (data, rate) ->
+        bar.tick(data, {'rate': rate})
+        #console.log rate
+      return
     else
       return console.log program.helpInformation()
     

@@ -4,11 +4,11 @@ path  = require 'path'
 http  = require 'http'
 url   = require 'url'
 request = require 'request'
-progressbar = require 'progress'
-#profiler = require 'v8-profiler'
+{EventEmitter} = require 'events'
+#profiler = require 'v8-profile
 
-class Getbot
-  @totalDownloaded = @lastDownloaded = @downloadStart= 0
+class Getbot extends EventEmitter
+  @lastDownloaded = @downloadStart = @size = 0
   @bar
 
   constructor: (address, user, pass) ->
@@ -18,43 +18,35 @@ class Getbot
       method: 'HEAD'
     options.auth = "#{user}:#{pass}" if !options.auth
     
-    downloads = 2
-    req = request options, (error, response, body) ->
+    req = request options, (error, response, body) =>
       if !error
         switch response.statusCode
           when 200
-            size = response.headers['content-length']
+            @size = response.headers['content-length']
             filename = decodeURI(url.parse(address).pathname.split("/").pop())
             fileExt = path.extname filename
             fileBasename = path.basename(filename, fileExt)
             newFilename = "#{fileBasename}.getbot"
-
-            Getbot.bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate', {
-              complete: '=',
-              incomplete: ' ',
-              width: 20,
-              total: parseInt size, 10
-            }
-            
-            Getbot.downloadStart = new Date
+            @downloadStart = new Date
+            @totalDownloaded = 0
             #Try and alloc hdd space (not sure if necessary)
             try
-              fs.open newFilename,'w', (err, fd) ->
-                fs.truncate fd, size
-                Getbot.startParts(options, size, 5, Getbot.download)
+              @emit 'downloadStart', @downloadStart
+
+              fs.open newFilename,'w', (err, fd) =>
+                fs.truncate fd, @size
+                @startParts(options, @size, 10, @download)
             catch error
               console.log "Not enough space."
               return
-            
           when 401 then console.log "401 Unauthorized"
-          else console.log "#{response.statusCode}"
+          else @emit 'error', "#{response.statusCode}"
       else
-        console.log "#{error}"
+        @emit 'error', "#{error}"
     
     req.end()
   
-  @download: (options, offset, end) ->
-    
+  download: (options, offset, end) =>
     filename = decodeURI(url.parse(options.uri).pathname.split("/").pop())
     fileExt = path.extname filename
     fileBasename = path.basename(filename, fileExt)
@@ -72,34 +64,33 @@ class Getbot
 
     req = request options, (error, response) ->
       if error
-        console.log error
+        @emit 'error', error
 
-    req.on 'data', (data) ->
-      Getbot.totalDownloaded += data.length
-      rate = Getbot.downloadRate Getbot.downloadStart
-      Getbot.bar.tick(data.length, {'rate': Getbot.downloadRate Getbot.downloadStart})
+    req.on 'data', (data) =>
+      @totalDownloaded += data.length
+      rate = @downloadRate @downloadStart
       file.write data
+      @emit 'data', @totalDownloaded, rate
+      return
     
     req.on 'end', () ->
       file.end()
       fs.rename(newFilename,filename)
   
-  @downloadRate: (start) ->
-    makeReadable(Getbot.totalDownloaded / (new Date - start) * 1024) + '/s'
+  downloadRate: (start) =>
+    makeReadable(@totalDownloaded / (new Date - start) * 1024) + '/s'
 
-  @startParts: (options, bytes, parts,callback) ->
+  startParts: (options, bytes, parts,callback) =>
     partSize = Math.ceil(1 * bytes/parts)
     i = 0
     while i < parts
-      console.log "Starting part #{i+1}"
       callback options, partSize*i, Math.min(partSize*(i+1)-1,bytes-1)
       i++
-      
-  @status: (status) ->
-    process.stdout.write '\r\033[2K' + status
 
-  @save: (buffer) ->
-    console.log("Writing file...")
+      @emit 'startPart', i
+      
+  status: (status) =>
+    process.stdout.write '\r\033[2K' + status
 
 makeReadable = (bytes) ->
   units= ['Bytes','KB','MB','GB','TB']
@@ -111,4 +102,3 @@ makeReadable = (bytes) ->
   return "#{bytes.toFixed(precision)} #{units[unit]}"
 
 module.exports = Getbot
-    
