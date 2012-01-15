@@ -29,7 +29,7 @@ class Getbot
             fileBasename = path.basename(filename, fileExt)
             newFilename = "#{fileBasename}.getbot"
 
-            Getbot.bar = new progressbar 'Downloading: [:bar] :percent :etaa | :rate', {
+            Getbot.bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate', {
               complete: '=',
               incomplete: ' ',
               width: 20,
@@ -109,13 +109,6 @@ makeReadable = (bytes) ->
     bytes = bytes/1024
     precision = if unit > 2 then 2 else 1
   return "#{bytes.toFixed(precision)} #{units[unit]}"
-
-estimateTime = (rate, size) ->
-  return console.log 'estimate time'
-
-convertTime = (seconds) ->
-  return console.log 'converted time'
-
 
 module.exports = Getbot
     
