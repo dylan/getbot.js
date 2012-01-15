@@ -5,6 +5,7 @@ http  = require 'http'
 url   = require 'url'
 request = require 'request'
 progressbar = require 'progress'
+#profiler = require 'v8-profiler'
 
 class Getbot
   @totalDownloaded = @lastDownloaded = @downloadStart= 0
@@ -62,18 +63,20 @@ class Getbot
     options.headers = {}
     options.method = 'GET'
     options.headers["range"]= "bytes=#{offset}-#{end}"
+    options.onResponse = true
 
     fops =
       flags: 'r+'
       start: offset
     file = fs.createWriteStream(newFilename,fops)
 
-    req = request options, (error, response, body) ->
+    req = request options, (error, response) ->
       if error
         console.log error
 
     req.on 'data', (data) ->
       Getbot.totalDownloaded += data.length
+      rate = Getbot.downloadRate Getbot.downloadStart
       Getbot.bar.tick(data.length, {'rate': Getbot.downloadRate Getbot.downloadStart})
       file.write data
     
@@ -106,7 +109,6 @@ makeReadable = (bytes) ->
     bytes = bytes/1024
     precision = if unit > 2 then 2 else 1
   return "#{bytes.toFixed(precision)} #{units[unit]}"
-
 
 module.exports = Getbot
     
