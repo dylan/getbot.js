@@ -23,17 +23,24 @@ exports.run = ->
       bar = null
 
       getbot.on 'downloadStart', () ->
-        bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate', {
+        bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate',
           complete: '=',
           incomplete: ' ',
           width: 20,
           total: parseInt getbot.size, 10
-        }
 
       getbot.on 'data', (data, rate) ->
-        bar.tick(data, {'rate': rate})
-        #console.log rate
+        rate = "#{makeReadable rate}/s"
+        bar.tick(data.length, {'rate': rate})
       return
     else
       return console.log program.helpInformation()
-    
+
+makeReadable = (bytes) ->
+  units= ['Bytes','KB','MB','GB','TB']
+  unit = 0
+  while bytes >= 1024
+    unit++
+    bytes = bytes/1024
+    precision = if unit > 2 then 2 else 1
+  return "#{bytes.toFixed(precision)} #{units[unit]}"

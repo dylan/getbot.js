@@ -35,11 +35,11 @@ class Getbot extends EventEmitter
 
               fs.open newFilename,'w', (err, fd) =>
                 fs.truncate fd, @size
-                @startParts(options, @size, 10, @download)
+                @startParts options, @size, 5, @download
             catch error
-              console.log "Not enough space."
+              @emit 'error', 'Not enough space.'
               return
-          when 401 then console.log "401 Unauthorized"
+          when 401 then @emit 'error', "401 Unauthorized"
           else @emit 'error', "#{response.statusCode}"
       else
         @emit 'error', "#{error}"
@@ -78,7 +78,7 @@ class Getbot extends EventEmitter
       fs.rename(newFilename,filename)
   
   downloadRate: (start) =>
-    makeReadable(@totalDownloaded / (new Date - start) * 1024) + '/s'
+    @totalDownloaded / (new Date - start) * 1024
 
   startParts: (options, bytes, parts,callback) =>
     partSize = Math.ceil(1 * bytes/parts)
@@ -91,14 +91,5 @@ class Getbot extends EventEmitter
       
   status: (status) =>
     process.stdout.write '\r\033[2K' + status
-
-makeReadable = (bytes) ->
-  units= ['Bytes','KB','MB','GB','TB']
-  unit = 0
-  while bytes >= 1024
-    unit++
-    bytes = bytes/1024
-    precision = if unit > 2 then 2 else 1
-  return "#{bytes.toFixed(precision)} #{units[unit]}"
 
 module.exports = Getbot
