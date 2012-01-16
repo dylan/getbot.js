@@ -30,10 +30,7 @@ exports.run = ->
           total: parseInt getbot.size, 10
 
       getbot.on 'data', (data, rate) ->
-<<<<<<< HEAD
         rate = "#{makeReadable rate}/s"
-=======
->>>>>>> 8063a78fcb6d95529dc0da2ab9850f386d435e05
         bar.tick(data.length, {'rate': rate})
       return
     else
