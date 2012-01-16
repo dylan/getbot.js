@@ -70,7 +70,7 @@ class Getbot extends EventEmitter
       @totalDownloaded += data.length
       rate = @downloadRate @downloadStart
       file.write data
-      @emit 'data', @totalDownloaded, rate
+      @emit 'data', data, rate
       return
     
     req.on 'end', () ->
