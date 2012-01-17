@@ -5,28 +5,34 @@ http  = require 'http'
 url   = require 'url'
 request = require 'request'
 {EventEmitter} = require 'events'
-#profiler = require 'v8-profile
 
 class Getbot extends EventEmitter
-  @lastDownloaded = @downloadStart = @size = 0
+  @lastDownloaded = @downloadStart = @fileSize = 0
   @bar
 
-  constructor: (address, user, pass) ->
+  constructor: (opts) ->
     options =
-      uri: address
+      uri: opts.address
       headers: {}
       method: 'HEAD'
-    options.auth = "#{user}:#{pass}" if !options.auth
+    options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
     
     req = request options, (error, response, body) =>
       if !error
         switch response.statusCode
           when 200
-            @size = response.headers['content-length']
-            filename = decodeURI(url.parse(address).pathname.split("/").pop())
+            @fileSize = response.headers['content-length']
+            if !opts.destination
+              filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
+            else
+              filename = opts.destination
+
             fileExt = path.extname filename
             fileBasename = path.basename(filename, fileExt)
             newFilename = "#{fileBasename}.getbot"
+            
+            options.filename = filename
+
             @downloadStart = new Date
             @totalDownloaded = 0
             #Try and alloc hdd space (not sure if necessary)
@@ -34,8 +40,8 @@ class Getbot extends EventEmitter
               @emit 'downloadStart', @downloadStart
 
               fs.open newFilename,'w', (err, fd) =>
-                fs.truncate fd, @size
-                @startParts options, @size, 5, @download
+                fs.truncate fd, @fileSize
+                @startParts options, @fileSize, opts.connections, @download
             catch error
               @emit 'error', 'Not enough space.'
               return
@@ -47,7 +53,10 @@ class Getbot extends EventEmitter
     req.end()
   
   download: (options, offset, end) =>
-    filename = decodeURI(url.parse(options.uri).pathname.split("/").pop())
+    if !options.filename
+      filename = decodeURI(url.parse(options.uri).pathname.split("/").pop())
+    else
+      filename = options.filename
     fileExt = path.extname filename
     fileBasename = path.basename(filename, fileExt)
     newFilename = "#{fileBasename}.getbot"
@@ -76,6 +85,7 @@ class Getbot extends EventEmitter
     req.on 'end', () ->
       file.end()
       fs.rename(newFilename,filename)
+      @emit 'part completed', "#{}"
   
   downloadRate: (start) =>
     @totalDownloaded / (new Date - start) * 1024

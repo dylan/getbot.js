@@ -19,7 +19,14 @@ exports.run = ->
     .parse(process.argv)
   
     if program.args?.length is 1
-      getbot = new Getbot program.args[0], program.user, program.pass
+      options = 
+        address     : program.args[0]
+        connections : program.connections
+        destination : program.destination
+        user        : program.user
+        pass        : program.pass
+
+      getbot = new Getbot options
       bar = null
 
       getbot.on 'downloadStart', () ->
@@ -27,11 +34,15 @@ exports.run = ->
           complete: '=',
           incomplete: ' ',
           width: 20,
-          total: parseInt getbot.size, 10
-
+          total: parseInt getbot.fileSize, 10
       getbot.on 'data', (data, rate) ->
         rate = "#{makeReadable rate}/s"
         bar.tick(data.length, {'rate': rate})
+      getbot.on 'startPart', (num) ->
+        console.log "Starting segment #{num}...\n"
+      getbot.on 'error', (error) ->
+        console.log error
+
       return
     else
       return console.log program.helpInformation()
