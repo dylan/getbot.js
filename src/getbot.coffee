@@ -4,6 +4,7 @@ path  = require 'path'
 http  = require 'http'
 url   = require 'url'
 request = require 'request'
+OffsetStream = require './offsetstream'
 {EventEmitter} = require 'events'
 
 class Getbot extends EventEmitter
@@ -69,7 +70,7 @@ class Getbot extends EventEmitter
     fops =
       flags: 'r+'
       start: offset
-    file = fs.createWriteStream(newFilename,fops)
+    file = OffsetStream.createOffsetStream newFilename,fops
 
     req = request options, (error, response) ->
       if error
