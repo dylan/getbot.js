@@ -7,15 +7,18 @@ request = require 'request'
 {EventEmitter} = require 'events'
 
 class Getbot extends EventEmitter
-  @lastDownloaded = @downloadStart = @fileSize = 0
-  @bar = @fileExt = @fileBasename = @newFilename = null
-  
   constructor: (opts) ->
+    # For reference
+    @lastDownloaded = @downloadStart = @fileSize = @partsCompleted = @maxConnections = 0
+    @bar = @fileExt = @fileBasename = @newFilename = @fileDescriptor = null
+
     options =
       uri: opts.address
       headers: {}
       method: 'HEAD'
     options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
+    @maxConnections = opts.connections
+    @partsCompleted = 0
 
     if !opts.destination
       @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
@@ -30,11 +33,9 @@ class Getbot extends EventEmitter
       if !error
         switch response.statusCode
           when 200
-            if response.headers['accept-ranges'] and !response.headers['accept-ranges'] is "bytes"
-              opts.connections = 1
-            else
+            if !response.headers['accept-ranges'] or response.headers['accept-ranges'] isnt "bytes"
               @emit 'noresume'
-            
+              @maxConnections = 1
             @fileSize = response.headers['content-length']
 
             @downloadStart = new Date
@@ -42,10 +43,10 @@ class Getbot extends EventEmitter
             
             #TODO Check and see if this is necessary...
             try
-              @emit 'downloadStart', @downloadStart
+              @emit 'downloadStart', "#{response.statusCode}"
               fs.open @newFilename,'w', (err, fd) =>
                 fs.truncate fd, @fileSize
-                @startParts options, @fileSize, opts.connections, @download
+                @startParts options, @fileSize, @maxConnections, @download
             catch error
               @emit 'error', 'Not enough space.'
               return
@@ -56,12 +57,12 @@ class Getbot extends EventEmitter
     
     req.end()
   
-  download: (options, offset, end) =>
+  download: (options, offset, end, number) =>
     options.headers = {}
     options.method = 'GET'
     options.headers["range"]= "bytes=#{offset}-#{end}"
     options.onResponse = true
-
+    partNumber = number
     fops =
       flags: 'r+'
       start: offset
@@ -80,21 +81,22 @@ class Getbot extends EventEmitter
       return
     
     req.on 'end', () =>
-      file.end()
-      fs.rename(@newFilename,@filename)
-      @emit 'part completed', "#{}"
+      @partsCompleted++
+      @emit 'partComplete', partNumber
+      if @partsCompleted == @maxConnections
+        file.end()
+        fs.rename(@newFilename,@filename)
+        @emit 'allPartsComplete'
   
   downloadRate: (start) ->
     @totalDownloaded / (new Date - start) * 1024
 
-  startParts: (options, bytes, parts, callback) ->
+  startParts: (options, bytes, parts, callback) =>
     partSize = Math.ceil(1 * bytes/parts)
-    
     i = 0
     while i < parts
-      callback options, partSize*i, Math.min(partSize*(i+1)-1,bytes-1)
+      callback options, partSize*i, Math.min(partSize*(i+1)-1, bytes-1), i+1
       i++
-
       @emit 'startPart', i
       
   status: (status) ->

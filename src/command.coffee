@@ -1,9 +1,5 @@
 colors    = require 'colors'
 program = require 'commander'
-cluster = require 'cluster'
-http = require 'http'
-url = require 'url'
-util = require 'util'
 Getbot = require '../lib/getbot'
 progressbar = require 'progress'
 
@@ -30,24 +26,29 @@ exports.run = ->
       bar = null
 
       getbot.on 'noresume', () ->
-        console.log "Resume not supported, using only one connection..."
-      getbot.on 'downloadStart', () ->
-        bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate',
+        log "Resume not supported, using only one connection..."
+      .on 'downloadStart', (statusCode) ->
+        log "#{getbot.filename} (#{makeReadable getbot.fileSize})", statusCode
+        bar = new progressbar 'getbot '.green+'    Downloading: [:bar] :percent :eta | :rate',
           complete: '=',
           incomplete: ' ',
           width: 20,
           total: parseInt getbot.fileSize, 10
-      getbot.on 'data', (data, rate) ->
+      .on 'data', (data, rate) ->
         rate = "#{makeReadable rate}/s"
         bar.tick(data.length, {'rate': rate})
-      getbot.on 'startPart', (num) ->
-        console.log "Starting segment #{num}...\n"
-      getbot.on 'error', (error) ->
-        console.log error
+      # .on 'startPart', (num) ->
+      #   log "Starting segment #{num}..."
+      # .on 'partComplete', (num) ->
+      #   log "Segment #{num} downloaded..."
+      .on 'allPartsComplete', () ->
+        log "Download finished..."
+      .on 'error', (error) ->
+        err error
 
       return
     else
-      return console.log program.helpInformation()
+      return log program.helpInformation()
 
 makeReadable = (bytes) ->
   units= ['Bytes','KB','MB','GB','TB']
@@ -57,3 +58,17 @@ makeReadable = (bytes) ->
     bytes = bytes/1024
     precision = if unit > 2 then 2 else 1
   return "#{bytes.toFixed(precision)} #{units[unit]}"
+
+log = (message, status) ->
+  state = if status then colors.inverse("#{status}".green) else "   "
+  process.stdout.write '\ngetbot '.green+state+" #{message}\n"
+
+err = (error, status) ->
+  err = if status then status else "ERR"
+  process.stdout.write '\ngetbot '.green+colors.inverse("#{err}".red)+" #{error}\n"
+
+clearLine = () ->
+  process.stdout.write '\r\033[2K'
+
+clearLines = () ->
+  process.stdout.write '\r\033[2K\r\033[1A\r\033[2K'
