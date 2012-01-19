@@ -8,30 +8,27 @@ request = require 'request'
 
 class Getbot extends EventEmitter
   @lastDownloaded = @downloadStart = @fileSize = 0
-  @bar
-
+  @bar = @fileExt = @fileBasename = @newFilename = null
   constructor: (opts) ->
     options =
       uri: opts.address
       headers: {}
       method: 'HEAD'
     options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
+    if !opts.destination
+      @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
+    else
+      @filename = opts.destination
+    
+    @fileExt = path.extname @filename
+    @fileBasename = path.basename(@filename, @fileExt)
+    @newFilename = "#{@fileBasename}.getbot"
     
     req = request options, (error, response, body) =>
       if !error
         switch response.statusCode
           when 200
             @fileSize = response.headers['content-length']
-            if !opts.destination
-              filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
-            else
-              filename = opts.destination
-
-            fileExt = path.extname filename
-            fileBasename = path.basename(filename, fileExt)
-            newFilename = "#{fileBasename}.getbot"
-            
-            options.filename = filename
 
             @downloadStart = new Date
             @totalDownloaded = 0
@@ -39,7 +36,7 @@ class Getbot extends EventEmitter
             try
               @emit 'downloadStart', @downloadStart
 
-              fs.open newFilename,'w', (err, fd) =>
+              fs.open @newFilename,'w', (err, fd) =>
                 fs.truncate fd, @fileSize
                 @startParts options, @fileSize, opts.connections, @download
             catch error
@@ -53,13 +50,6 @@ class Getbot extends EventEmitter
     req.end()
   
   download: (options, offset, end) =>
-    if !options.filename
-      filename = decodeURI(url.parse(options.uri).pathname.split("/").pop())
-    else
-      filename = options.filename
-    fileExt = path.extname filename
-    fileBasename = path.basename(filename, fileExt)
-    newFilename = "#{fileBasename}.getbot"
     
     options.headers = {}
     options.method = 'GET'
@@ -69,7 +59,8 @@ class Getbot extends EventEmitter
     fops =
       flags: 'r+'
       start: offset
-    file = fs.createWriteStream(newFilename,fops)
+    #console.log @newFilename
+    file = fs.createWriteStream(@newFilename,fops)
 
     req = request options, (error, response) ->
       if error
@@ -82,15 +73,15 @@ class Getbot extends EventEmitter
       @emit 'data', data, rate
       return
     
-    req.on 'end', () ->
+    req.on 'end', () =>
       file.end()
-      fs.rename(newFilename,filename)
+      fs.rename(@newFilename,@filename)
       @emit 'part completed', "#{}"
   
-  downloadRate: (start) =>
+  downloadRate: (start) ->
     @totalDownloaded / (new Date - start) * 1024
 
-  startParts: (options, bytes, parts,callback) =>
+  startParts: (options, bytes, parts, callback) ->
     partSize = Math.ceil(1 * bytes/parts)
     i = 0
     while i < parts
@@ -99,7 +90,7 @@ class Getbot extends EventEmitter
 
       @emit 'startPart', i
       
-  status: (status) =>
+  status: (status) ->
     process.stdout.write '\r\033[2K' + status
 
 module.exports = Getbot

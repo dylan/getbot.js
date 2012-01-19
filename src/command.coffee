@@ -12,7 +12,7 @@ exports.run = ->
   program
     .version('0.0.2')
     .usage('[options] <URL>')
-    .option('-d, --destination [path]', 'the destination for the downloaded file','.')
+    .option('-d, --destination [path]', 'the destination for the downloaded file')
     .option('-c, --connections [number]', 'max connections to try', parseInt, 3)
     .option('-u, --user [string]', 'username used for basic auth')
     .option('-p, --pass [string]', 'password used for basic auth')
