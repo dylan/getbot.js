@@ -31,7 +31,7 @@ exports.run = ->
         @readableSize = makeReadable(getbot.fileSize)
         log "#{getbot.filename} (#{makeReadable getbot.fileSize})", statusCode
         bar = new progressbar 'getbot '.green+'    Downloading: [:bar] :percent :size @ :rate',
-          complete: "--".green,
+          complete: "——".green,
           incomplete: '  ',
           width: 20,
           total: parseInt getbot.fileSize, 10,
