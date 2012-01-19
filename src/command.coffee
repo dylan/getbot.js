@@ -28,15 +28,16 @@ exports.run = ->
       getbot.on 'noresume', () ->
         log "Resume not supported, using only one connection..."
       .on 'downloadStart', (statusCode) ->
+        @readableSize = makeReadable(getbot.fileSize)
         log "#{getbot.filename} (#{makeReadable getbot.fileSize})", statusCode
-        bar = new progressbar 'getbot '.green+'    Downloading: [:bar] :percent :eta | :rate',
-          complete: "——".green,
+        bar = new progressbar 'getbot '.green+'    Downloading: [:bar] :percent :size @ :rate',
+          complete: "--".green,
           incomplete: '  ',
           width: 20,
-          total: parseInt getbot.fileSize, 10
+          total: parseInt getbot.fileSize, 10,
       .on 'data', (data, rate) ->
         rate = "#{makeReadable rate}/s"
-        bar.tick(data.length, {'rate': rate})
+        bar.tick(data.length, {'rate': rate, 'size': @readableSize})
       # .on 'startPart', (num) ->
       #   log "Starting segment #{num}..."
       # .on 'partComplete', (num) ->
