@@ -29,6 +29,8 @@ exports.run = ->
       getbot = new Getbot options
       bar = null
 
+      getbot.on 'noresume', () ->
+        console.log "Resume not supported, using only one connection..."
       getbot.on 'downloadStart', () ->
         bar = new progressbar 'Downloading: [:bar] :percent :eta | :rate',
           complete: '=',

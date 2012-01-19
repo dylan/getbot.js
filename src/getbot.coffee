@@ -9,12 +9,14 @@ request = require 'request'
 class Getbot extends EventEmitter
   @lastDownloaded = @downloadStart = @fileSize = 0
   @bar = @fileExt = @fileBasename = @newFilename = null
+  
   constructor: (opts) ->
     options =
       uri: opts.address
       headers: {}
       method: 'HEAD'
     options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
+
     if !opts.destination
       @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
     else
@@ -30,14 +32,17 @@ class Getbot extends EventEmitter
           when 200
             if response.headers['accept-ranges'] and !response.headers['accept-ranges'] is "bytes"
               opts.connections = 1
+            else
+              @emit 'noresume'
+            
             @fileSize = response.headers['content-length']
 
             @downloadStart = new Date
             @totalDownloaded = 0
-            #Try and alloc hdd space (not sure if necessary)
+            
+            #TODO Check and see if this is necessary...
             try
               @emit 'downloadStart', @downloadStart
-
               fs.open @newFilename,'w', (err, fd) =>
                 fs.truncate fd, @fileSize
                 @startParts options, @fileSize, opts.connections, @download
@@ -52,7 +57,6 @@ class Getbot extends EventEmitter
     req.end()
   
   download: (options, offset, end) =>
-    
     options.headers = {}
     options.method = 'GET'
     options.headers["range"]= "bytes=#{offset}-#{end}"
@@ -85,6 +89,7 @@ class Getbot extends EventEmitter
 
   startParts: (options, bytes, parts, callback) ->
     partSize = Math.ceil(1 * bytes/parts)
+    
     i = 0
     while i < parts
       callback options, partSize*i, Math.min(partSize*(i+1)-1,bytes-1)
