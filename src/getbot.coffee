@@ -28,7 +28,7 @@ class Getbot extends EventEmitter
       if !error
         switch response.statusCode
           when 200
-            if response.headers['accept-ranges'] is "none" or response.headers['accept-ranges'] is null
+            if response.headers['accept-ranges'] and !response.headers['accept-ranges'] is "bytes"
               opts.connections = 1
             @fileSize = response.headers['content-length']
 
