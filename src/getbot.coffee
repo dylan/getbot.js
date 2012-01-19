@@ -98,8 +98,5 @@ class Getbot extends EventEmitter
       callback options, partSize*i, Math.min(partSize*(i+1)-1, bytes-1), i+1
       i++
       @emit 'startPart', i
-      
-  status: (status) ->
-    process.stdout.write '\r\033[2K' + status
 
 module.exports = Getbot
