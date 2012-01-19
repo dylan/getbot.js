@@ -28,6 +28,8 @@ class Getbot extends EventEmitter
       if !error
         switch response.statusCode
           when 200
+            if response.headers['accept-ranges'] is "none"
+              opts.connections = 1
             @fileSize = response.headers['content-length']
 
             @downloadStart = new Date
@@ -59,7 +61,7 @@ class Getbot extends EventEmitter
     fops =
       flags: 'r+'
       start: offset
-    #console.log @newFilename
+    
     file = fs.createWriteStream(@newFilename,fops)
 
     req = request options, (error, response) ->
