@@ -46,7 +46,7 @@ exports.run = ->
       .on 'allPartsComplete', () ->
         log "Download finished...",null, '\n'
       .on 'error', (error) ->
-        err error
+        err error,null,'\n'
       return
     else
       return log program.helpInformation(), off
@@ -65,9 +65,10 @@ log = (message, status, prefix) ->
   state = if status then colors.inverse("#{status}".green) else "   "
   process.stdout.write prefix+'getbot '.green+state+" #{message}\n"
 
-err = (error, status) ->
+err = (error, status, prefix) ->
+  prefix = if prefix then prefix else ""
   err = if status then status else "ERR"
-  process.stdout.write 'getbot '.green+colors.inverse("#{err}".red)+" #{error.toString().replace("Error: ","")}\n"
+  process.stdout.write prefix+'getbot '.green+colors.inverse("#{err}".red)+" #{error.toString().replace("Error: ","")}\n"
   process.exit(1)
 
 clearLine = () ->

@@ -1,8 +1,8 @@
 {
   "author": "John Barker and Dylan Wreggelsworth",
   "name": "getbot",
-  "description": "A CLI script for all of your multi-connection file fetching needs.",
-  "version": "0.0.1",
+  "description": "A CLI script for all of your segmented downloading needs.",
+  "version": "0.0.5",
   "repository": {
     "type": "git",
     "url": "git://github.com/dylan/getbot.git"
@@ -15,11 +15,11 @@
     "node": "~0.6.6"
   },
   "dependencies": {
-    "growl": "1.4.1",
-    "colors": "0.6.0-1",
-    "commander": "0.5.1",
-    "request": "2.9.3",
-    "progress": "0.0.4"
+    "growl": "latest",
+    "colors": "latest",
+    "commander": "latest",
+    "request": "latest",
+    "progress": "latest"
   },
   "devDependencies": {}
 }
