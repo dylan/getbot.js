@@ -68,7 +68,7 @@ log = (message, status, prefix) ->
 err = (error, status, prefix) ->
   prefix = if prefix then prefix else ""
   err = if status then status else "ERR"
-  process.stdout.write prefix+'getbot '.green+colors.inverse("#{err}".red)+" #{error.toString().replace("Error: ","")}\n"
+  process.stdout.write prefix+'getbot '.green+colors.inverse("#{err}".red)+" #{error.toString().replace("Error: ","")}\n\n"
   process.exit(1)
 
 clearLine = () ->
