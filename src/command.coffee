@@ -44,7 +44,7 @@ exports.run = ->
         rate = "#{makeReadable rate}/s"
         bar.tick(data.length, {'rate': rate, 'size': @readableSize})
       .on 'allPartsComplete', () ->
-        log "Download finished...",null, '\n'
+        log "Download finished...\n",null, '\n'
       .on 'error', (error) ->
         err error,null,'\n'
       return
