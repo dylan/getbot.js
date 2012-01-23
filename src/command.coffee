@@ -6,7 +6,7 @@ progressbar = require 'progress'
 exports.run = ->
   
   program
-    .version('0.0.2')
+    .version('0.0.5')
     .usage('[options] <URL>')
     .option('-d, --destination [path]', 'the destination for the downloaded file')
     .option('-c, --connections [number]', 'max connections to try', parseInt, 5)
