@@ -8,6 +8,7 @@ request = require 'request'
 
 class Getbot extends EventEmitter
   constructor: (opts) ->
+    # For reference
     @lastDownloaded = @downloadStart = @fileSize = @partsCompleted = @maxConnections = 0
     @bar = @fileExt = @fileBasename = @newFilename = @fileDescriptor = null
 
@@ -18,15 +19,9 @@ class Getbot extends EventEmitter
     options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
     @maxConnections = opts.connections
     @partsCompleted = 0
-    
-    address = url.parse(opts.address)
-    
-    # Verify protocol
-    if address.protocol isnt 'http:' or address.protocol isnt 'https:'
-      throw new Error "Getbot only supports HTTP or HTTPs at the moment."
 
     if !opts.destination
-      @filename = decodeURI(address.pathname.split("/").pop())
+      @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
     else
       @filename = opts.destination
     
@@ -53,18 +48,19 @@ class Getbot extends EventEmitter
                 fs.truncate fd, @fileSize
                 @startParts options, @fileSize, @maxConnections, @download
             catch error
-              @emit 'error', "#{error}"
+              @emit 'error', 'Not enough space.'
               return
           when 401 then @emit 'error', "401 Unauthorized"
           else @emit 'error', "#{response.statusCode}"
       else
         @emit 'error', "#{error}"
+    
     req.end()
   
   download: (options, offset, end, number) =>
     options.headers = {}
     options.method = 'GET'
-    options.headers["range"] = "bytes=#{offset}-#{end}"
+    options.headers["range"]= "bytes=#{offset}-#{end}"
     options.onResponse = true
     partNumber = number
     fops =
@@ -75,7 +71,7 @@ class Getbot extends EventEmitter
 
     req = request options, (error, response) ->
       if error
-        @emit 'error', "#{error}"
+        @emit 'error', error
 
     req.on 'data', (data) =>
       @totalDownloaded += data.length
@@ -83,15 +79,14 @@ class Getbot extends EventEmitter
       file.write data
       @emit 'data', data, rate
       return
-    .on 'end', () =>
+    
+    req.on 'end', () =>
       @partsCompleted++
       @emit 'partComplete', partNumber
       if @partsCompleted == @maxConnections
         file.end()
         fs.rename(@newFilename,@filename)
         @emit 'allPartsComplete'
-    .on 'error', (error) =>
-      @emit 'error', "#{error}"
   
   downloadRate: (start) ->
     @totalDownloaded / (new Date - start) * 1024

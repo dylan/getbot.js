@@ -21,13 +21,8 @@ exports.run = ->
         destination : program.destination
         user        : program.user
         pass        : program.pass
-      
-      try
-        getbot = new Getbot options  
-      catch error
-        err error
-        process.exit(1)
-      
+
+      getbot = new Getbot options
       bar = null
 
       getbot.on 'noresume', () ->
