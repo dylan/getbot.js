@@ -18,13 +18,15 @@ class Getbot extends EventEmitter
     options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
     @maxConnections = opts.connections
     @partsCompleted = 0
-
-    # Verify protocols
-    if url.parse(opts.address).protocol isnt 'http:' or url.parse(opts.address).protocol isnt 'https:'
-      throw new Error "Getbot only supports HTTP or HTTPs at the moment..."
+    
+    address = url.parse(opts.address)
+    
+    # Verify protocol
+    if address.protocol isnt 'http:' or address.protocol isnt 'https:'
+      throw new Error "Getbot only supports HTTP or HTTPs at the moment."
 
     if !opts.destination
-      @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
+      @filename = decodeURI(address.pathname.split("/").pop())
     else
       @filename = opts.destination
     
