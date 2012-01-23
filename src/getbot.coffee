@@ -9,14 +9,15 @@ request = require 'request'
 class Getbot extends EventEmitter
   constructor: (opts) ->
     # For reference
-    @lastDownloaded = @downloadStart = @fileSize = @partsCompleted = @maxConnections = 0
-    @bar = @fileExt = @fileBasename = @newFilename = @fileDescriptor = null
+    @downloadStart = @fileSize = @partsCompleted = @maxConnections = 0
+    @fileExt = @fileBasename = @newFilename = @fileDescriptor = null
 
     options =
       uri: opts.address
       headers: {}
       method: 'HEAD'
     options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
+
     @maxConnections = opts.connections
     @partsCompleted = 0
 
@@ -34,22 +35,23 @@ class Getbot extends EventEmitter
         switch response.statusCode
           when 200
             if !response.headers['accept-ranges'] or response.headers['accept-ranges'] isnt "bytes"
-              @emit 'noresume'
+              @emit 'noresume', response.statusCode
               @maxConnections = 1
+            
             @fileSize = response.headers['content-length']
-
             @downloadStart = new Date
             @totalDownloaded = 0
             
-            #TODO Check and see if this is necessary...
-            try
-              @emit 'downloadStart', "#{response.statusCode}"
-              fs.open @newFilename,'w', (err, fd) =>
-                fs.truncate fd, @fileSize
-                @startParts options, @fileSize, @maxConnections, @download
-            catch error
-              @emit 'error', 'Not enough space.'
-              return
+            if @fileSize isnt undefined or @fileSize is 0
+              try
+                @emit 'downloadStart', "#{response.statusCode}"
+                fs.open @newFilename,'w', (err, fd) =>
+                  fs.truncate fd, @fileSize
+                  @startParts options, @fileSize, @maxConnections, @download
+              catch error
+                @emit 'error', error
+            else
+              @emit 'error', "content-length is 0, aborting..."
           when 401 then @emit 'error', "401 Unauthorized"
           else @emit 'error', "#{response.statusCode}"
       else

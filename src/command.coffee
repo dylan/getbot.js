@@ -22,14 +22,18 @@ exports.run = ->
         user        : program.user
         pass        : program.pass
 
-      getbot = new Getbot options
+      try
+        getbot = new Getbot options          
+      catch error
+        err error
+
       bar = null
 
-      getbot.on 'noresume', () ->
-        log "Resume not supported, using only one connection..."
+      getbot.on 'noresume', (statusCode) ->
+        log "Resume not supported, using only one connection...", statusCode, '\n'
       .on 'downloadStart', (statusCode) ->
+        log "#{getbot.filename} (#{makeReadable getbot.fileSize})", statusCode, '\n'
         @readableSize = makeReadable(getbot.fileSize)
-        log "#{getbot.filename} (#{makeReadable getbot.fileSize})", statusCode
         bar = new progressbar 'getbot '.green+'    ‹:bar› :percent :size @ :rate',
           complete: "—".green,
           incomplete: '—'.red,
@@ -39,17 +43,13 @@ exports.run = ->
       .on 'data', (data, rate) ->
         rate = "#{makeReadable rate}/s"
         bar.tick(data.length, {'rate': rate, 'size': @readableSize})
-      # .on 'startPart', (num) ->
-      #   log "Starting segment #{num}..."
-      # .on 'partComplete', (num) ->
-      #   log "Segment #{num} downloaded..."
       .on 'allPartsComplete', () ->
-        log "Download finished..."
+        log "Download finished...",null, '\n'
       .on 'error', (error) ->
         err error
       return
     else
-      return log program.helpInformation()
+      return log program.helpInformation(), off
 
 makeReadable = (bytes) ->
   units= ['Bytes','KB','MB','GB','TB']
@@ -60,13 +60,15 @@ makeReadable = (bytes) ->
     precision = if unit > 2 then 2 else 1
   return "#{bytes.toFixed(precision)} #{units[unit]}"
 
-log = (message, status) ->
+log = (message, status, prefix) ->
+  prefix = if prefix then prefix else ""
   state = if status then colors.inverse("#{status}".green) else "   "
-  process.stdout.write '\ngetbot '.green+state+" #{message}\n"
+  process.stdout.write prefix+'getbot '.green+state+" #{message}\n"
 
 err = (error, status) ->
   err = if status then status else "ERR"
-  process.stdout.write '\ngetbot '.green+colors.inverse("#{err}".red)+" #{error}\n"
+  process.stdout.write 'getbot '.green+colors.inverse("#{err}".red)+" #{error.toString().replace("Error: ","")}\n"
+  process.exit(1)
 
 clearLine = () ->
   process.stdout.write '\r\033[2K'
