@@ -84,15 +84,13 @@ class Getbot extends EventEmitter
     req = request options, (error, response) ->
       if error
         @emit 'error', error
-
-    req.on 'data', (data) =>
+    .on 'data', (data) =>
       @totalDownloaded += data.length
       rate = @downloadRate @downloadStart
       file.write data
       @emit 'data', data, rate
       return
-    
-    req.on 'end', () =>
+    .on 'end', () =>
       @partsCompleted++
       @emit 'partComplete', partNumber
       if @partsCompleted == @maxConnections
