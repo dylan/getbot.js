@@ -6,15 +6,22 @@
 
 ## Installation
 Make sure you have the latest node installed and using npm run:
-    $ npm install -g getbot
-
+```
+$ npm install -g getbot
+```
 ## Usage
 
 To download a file to a folder, CD into the destination folder and run the following:
-    $ getbot <address>
+```
+$ getbot <address>
+```
 and Bob's your uncle.
 
 To download a file that requires basic HTTP Auth:
-    $ getbot -u <user> -p <pass> <address>
+```
+$ getbot -u <user> -p <pass> <address>
+```
 or
-    $ getbot <address> (if the address contains the credentials)
+```
+$ getbot <address> (if the address contains the credentials)
+```
