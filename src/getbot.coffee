@@ -12,19 +12,28 @@ class Getbot extends EventEmitter
     @downloadStart = @fileSize = @partsCompleted = @maxConnections = 0
     @fileExt = @fileBasename = @newFilename = @fileDescriptor = null
 
+    @destination = opts.destination
+    @listDownload = opts.list
+    @maxConnections = opts.connections
+
     options =
       uri: opts.address
       headers: {}
       method: 'HEAD'
     options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
 
-    @maxConnections = opts.connections
     @partsCompleted = 0
 
-    if !opts.destination
+    if !@destination
       @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
+    else if @destination and @listDownload
+      @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
+      @dir = @destination
+      @startPath = process.cwd()
+      fs.mkdir @dir, () =>
+        process.chdir @dir
     else
-      @filename = opts.destination
+      @filename = @destination
     
     @fileExt = path.extname @filename
     @fileBasename = path.basename(@filename, @fileExt)
@@ -88,8 +97,10 @@ class Getbot extends EventEmitter
       @emit 'partComplete', partNumber
       if @partsCompleted == @maxConnections
         file.end()
-        fs.rename(@newFilename,@filename)
-        @emit 'allPartsComplete'
+        fs.rename @newFilename, @filename, ()=>
+          if @destination and @listDownload
+            process.chdir @startPath
+          @emit 'allPartsComplete'
   
   downloadRate: (start) ->
     @totalDownloaded / (new Date - start) * 1024
