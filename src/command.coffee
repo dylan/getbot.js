@@ -72,6 +72,7 @@ loadList = (filename) ->
   .toString()
   .split('\n')
   .forEach (line) ->
+    if line != ''
       downloadList.push line
   downloadList
 
