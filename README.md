@@ -33,7 +33,7 @@ $ getbot <address> (if the address contains the credentials)
 
 Getbot can also read a file and use each line as addresses to queue:
 
-Create a file _<yourfile> (note each path on it's own line)_
+Create a file _&gt;yourfile&lt; (note each path on it's own line)_
 
 ```
 http://file1.dmg
