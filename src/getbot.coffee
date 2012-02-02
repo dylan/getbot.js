@@ -8,9 +8,6 @@ request = require 'request'
 
 class Getbot extends EventEmitter
   constructor: (opts) ->
-    # For reference
-    @downloadStart = @fileSize = @partsCompleted = @maxConnections = 0
-    @fileExt = @fileBasename = @newFilename = @fileDescriptor = null
 
     @destination = opts.destination
     @listDownload = opts.list

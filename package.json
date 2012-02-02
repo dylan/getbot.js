@@ -2,10 +2,10 @@
   "author": "John Barker and Dylan Wreggelsworth",
   "name": "getbot",
   "description": "A CLI script for all of your segmented downloading needs.",
-  "version": "0.0.6",
+  "version": "0.0.6a",
   "repository": {
     "type": "git",
-    "url": "git://github.com/dylan/getbot.git"
+    "url": "git://github.com/dylan/getbot.js.git"
   },
   "bin": {
     "getbot": "./bin/getbot"
