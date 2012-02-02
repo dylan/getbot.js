@@ -1,3 +1,6 @@
+# Getbot.js
+![getbot.js](https://github.com/dylan/getbot.js/raw/master/getbot.gif)
+
 ## TODO
 * Make use of clustering to allow for higher connection counts.
 * Add support for pause/resume
