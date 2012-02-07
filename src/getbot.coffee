@@ -34,7 +34,7 @@ class Getbot extends EventEmitter
     
     @fileExt = path.extname @filename
     @fileBasename = path.basename(@filename, @fileExt)
-    @newFilename = "#{@fileBasename}.getbot"
+    @newFilename = "#{@filename}.getbot"
     
     req = request options, (error, response, body) =>
       if !error

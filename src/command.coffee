@@ -4,11 +4,12 @@ Getbot = require '../lib/getbot'
 progressbar = require 'progress'
 fs = require 'fs'
 util = require 'util'
+growl = require 'growl'
 
 exports.run = ->
   
   program
-    .version('0.0.6')
+    .version('0.0.6b')
     .usage('[options] <URL>')
     .option('-d, --destination [path]', 'the destination for the downloaded file')
     .option('-c, --connections [number]', 'max connections to try', parseInt, 5)
@@ -32,7 +33,7 @@ exports.run = ->
       user        : program.user
       pass        : program.pass
 
-    if list.length > 1
+    if list.length >= 1
       options.list = true
 
     try
@@ -55,7 +56,7 @@ startBot = (options, list) ->
     @readableSize = makeReadable(getbot.fileSize)
     bar = new progressbar 'getbot '.green+'    ‹:bar› :percent :size @ :rate',
       complete: "—".green,
-      incomplete: '—'.red,
+      incomplete: ' ',
       width: 20,
       total: parseInt getbot.fileSize, 10
     return
@@ -64,7 +65,8 @@ startBot = (options, list) ->
     bar.tick(data.length, {'rate': rate, 'size': @readableSize})
   .on 'allPartsComplete', () =>
     log "Download finished.\n",null, '\n'
-    if list.length > 0
+    growl "#{getbot.filename} complete.", { title: 'getbot', image: "#{__dirname}/../getbot.png"}
+    if list.length >= 1
       startBot(options, list)
   .on 'error', (error) ->
     err error,null,'\n'
