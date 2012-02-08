@@ -9,7 +9,7 @@ growl = require 'growl'
 exports.run = ->
   
   program
-    .version('0.0.6b')
+    .version('0.0.6c')
     .usage('[options] <URL>')
     .option('-d, --destination [path]', 'the destination for the downloaded file')
     .option('-c, --connections [number]', 'max connections to try', parseInt, 5)
