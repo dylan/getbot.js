@@ -45,11 +45,11 @@ class Getbot extends EventEmitter
               if !response.headers['accept-ranges'] or response.headers['accept-ranges'] isnt "bytes"
                 @emit 'noresume', response.statusCode
                 @maxConnections = 1
-              
+
               @fileSize = response.headers['content-length']
               @downloadStart = new Date
               @totalDownloaded = 0
-            
+
               try
                 @emit 'downloadStart', "#{response.statusCode}"
                 fs.open @newFilename,'w', (err, fd) =>
@@ -59,6 +59,7 @@ class Getbot extends EventEmitter
                 @emit 'error', error
             else
               @emit 'error', "content-length is #{response.headers['content-length']}, aborting..."
+          when 400 then @emit 'error', "400 Bad Request"
           when 401 then @emit 'error', "401 Unauthorized"
           else @emit 'error', "#{response.statusCode}"
       else
