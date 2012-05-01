@@ -6,7 +6,7 @@
   ],
   "name": "getbot",
   "description": "A CLI script for all of your segmented downloading needs.",
-  "version": "0.0.6c",
+  "version": "0.0.6d",
   "repository": {
     "type": "git",
     "url": "git://github.com/dylan/getbot.js.git"
@@ -28,7 +28,7 @@
     "growl": "latest",
     "colors": "latest",
     "commander": "latest",
-    "request": "latest",
+    "request": "2.9.3",
     "progress": "latest"
   },
   "devDependencies": {}
