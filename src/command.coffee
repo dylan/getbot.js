@@ -100,9 +100,3 @@ err = (error, status, prefix) ->
   err = if status then status else "ERR"
   process.stdout.write prefix+'getbot '.green+colors.inverse("#{err}".red)+" #{error.toString().replace("Error: ","")}\n\n"
   process.exit(1)
-
-clearLine = () ->
-  process.stdout.write '\r\033[2K'
-
-clearLines = () ->
-  process.stdout.write '\r\033[2K\r\033[1A\r\033[2K'
