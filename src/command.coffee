@@ -1,40 +1,34 @@
-colors    = require 'colors'
-program = require 'commander'
-Getbot = require '../lib/getbot'
+fs          = require 'fs'
+colors      = require 'colors'
+program     = require 'commander'
+Getbot      = require '../lib/getbot'
 progressbar = require 'progress'
-fs = require 'fs'
-util = require 'util'
-growl = require 'growl'
 
 exports.run = ->
   
   program
-    .version('0.0.6c')
+    .version('0.0.7')
     .usage('[options] <URL>')
-    .option('-d, --destination [path]', 'the destination for the downloaded file')
+    .option('-d, --destination [path]', 'the destination for the downloaded file(s)')
     .option('-c, --connections [number]', 'max connections to try', parseInt, 5)
     .option('-u, --user [string]', 'username used for basic http auth')
     .option('-p, --pass [string]', 'password used for basic http auth')
-    .option('-l, --list [string]', 'a list of urls (one on each line) to read in and download from')
+    .option('-l, --list [path]', 'a list of urls (one on each line) to read in and download from')
+    .option('-q, --quiet', 'run getbot silently')
     .parse(process.argv)
-  
+
     if program.args?.length is 1
       list = [program.args[0]]
     else
-      if program.list
-        list = loadList(program.list)
-        list.reverse()
-      else
-        return log program.helpInformation(), off
+      list = loadList(program.list)
+      list.reverse()
 
-    options = 
+    options =
       connections : program.connections
       destination : program.destination
       user        : program.user
       pass        : program.pass
-
-    if list.length >= 1
-      options.list = true
+      quiet       : program.quiet
 
     try
       startBot options, list
@@ -52,20 +46,23 @@ startBot = (options, list) ->
   getbot.on 'noresume', (statusCode) ->
     log "Resume not supported, using only one connection...", statusCode, '\n'
   .on 'downloadStart', (statusCode) ->
-    log "#{getbot.filename} (#{makeReadable getbot.fileSize})", statusCode, '\n'
-    @readableSize = makeReadable(getbot.fileSize)
-    bar = new progressbar 'getbot '.green+'    ‹:bar› :percent :size @ :rate',
-      complete: "—".green,
-      incomplete: ' ',
-      width: 20,
-      total: parseInt getbot.fileSize, 10
+    if !options.quiet
+      log "#{getbot.filename} (#{makeReadable getbot.fileSize})", statusCode, '\n'
+      @readableSize = makeReadable(getbot.fileSize)
+      bar = new progressbar 'getbot '.green+'    ‹:bar› :percent :size @ :rate',
+        complete: "—".green,
+        incomplete: ' ',
+        width: 20,
+        total: parseInt getbot.fileSize, 10
     return
   .on 'data', (data, rate) ->
-    rate = "#{makeReadable rate}/s"
-    bar.tick(data.length, {'rate': rate, 'size': @readableSize})
+    if !options.quiet
+      rate = "#{makeReadable rate}/s"
+      bar.tick(data.length, {'rate': rate, 'size': @readableSize})
   .on 'allPartsComplete', () =>
-    log "Download finished.\n",null, '\n'
-    growl "#{getbot.filename} complete.", { title: 'getbot', image: "#{__dirname}/../getbot.png"}
+    if !options.quiet
+      log "Download finished.\n",null, '\n'
+      process.exit(0)
     if list.length >= 1
       startBot(options, list)
   .on 'error', (error) ->
@@ -102,7 +99,7 @@ err = (error, status, prefix) ->
   process.exit(1)
 
 clearLine = () ->
-  process.stdout.write '\r\033[2K'
+  process.stdout.write '\r\x33[2K'
 
 clearLines = () ->
-  process.stdout.write '\r\033[2K\r\033[1A\r\033[2K'
+  process.stdout.write '\r\x33[2K\r\x33[1A\r\x33[2K'

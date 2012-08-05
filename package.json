@@ -25,11 +25,11 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "growl": "latest",
     "colors": "latest",
     "commander": "latest",
     "request": "2.9.3",
-    "progress": "latest"
+    "progress": "latest",
+    "node-fs": "latest"
   },
   "devDependencies": {}
 }

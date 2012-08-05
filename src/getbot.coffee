@@ -1,16 +1,15 @@
-util  = require 'util'
-fs    = require 'fs'
-path  = require 'path'
-http  = require 'http'
-url   = require 'url'
-request = require 'request'
+util           = require 'util'
+fs             = require 'node-fs'
+path           = require 'path'
+http           = require 'http'
+url            = require 'url'
+request        = require 'request'
 {EventEmitter} = require 'events'
 
 class Getbot extends EventEmitter
   constructor: (opts) ->
-
+    
     @destination = opts.destination
-    @listDownload = opts.list
     @maxConnections = opts.connections
 
     options =
@@ -20,21 +19,22 @@ class Getbot extends EventEmitter
     options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
 
     @partsCompleted = 0
-
-    if !@destination
-      @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
-    else if @destination and @listDownload
-      @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
-      @dir = @destination
-      @startPath = process.cwd()
-      fs.mkdir @dir, () =>
-        process.chdir @dir
-    else
-      @filename = @destination
     
-    @fileExt = path.extname @filename
+    if @destination
+      @filename = @destination
+      @path = path.dirname(@destination)
+      if @path
+        @startPath = process.cwd()
+        fs.mkdir @path, 0o0777, true, () =>
+          process.chdir @path
+    else
+      @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
+    
+    @fileExt      = path.extname @filename
     @fileBasename = path.basename(@filename, @fileExt)
-    @newFilename = "#{@filename}.getbot"
+    @fileDirname  = path.dirname(@filename)
+    @origFilename = "#{@fileBasename}#{@fileExt}"
+    @newFilename  = "#{@origFilename}.getbot"
     
     req = request options, (error, response, body) =>
       if !error
@@ -69,9 +69,11 @@ class Getbot extends EventEmitter
   
   download: (options, offset, end, number) =>
     options.headers = {}
+    options.pool = {}
     options.method = 'GET'
-    options.headers["range"]= "bytes=#{offset}-#{end}"
+    options.headers["range"] = "bytes=#{offset}-#{end}"
     options.onResponse = true
+    options.pool['maxSockets'] = @maxConnections
     partNumber = number
     fops =
       flags: 'r+'
@@ -93,7 +95,7 @@ class Getbot extends EventEmitter
       @emit 'partComplete', partNumber
       if @partsCompleted == @maxConnections
         file.end()
-        fs.rename @newFilename, @filename, ()=>
+        fs.rename @newFilename, @origFilename, ()=>
           if @destination and @listDownload
             process.chdir @startPath
           @emit 'allPartsComplete'
