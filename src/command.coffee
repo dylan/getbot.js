@@ -7,9 +7,10 @@ progressbar = require 'progress'
 exports.run = ->
   
   program
-    .version('0.0.7')
+    .version('0.0.7a')
     .usage('[options] <URL>')
     .option('-d, --destination [path]', 'the destination for the downloaded file(s)')
+    .option('-f, --force', 'force getbot to overwrite any existing file or folder')
     .option('-c, --connections [number]', 'max connections to try', parseInt, 5)
     .option('-u, --user [string]', 'username used for basic http auth')
     .option('-p, --pass [string]', 'password used for basic http auth')
@@ -26,6 +27,7 @@ exports.run = ->
     options =
       connections : program.connections
       destination : program.destination
+      force       : program.force
       user        : program.user
       pass        : program.pass
       quiet       : program.quiet
@@ -65,6 +67,8 @@ startBot = (options, list) ->
       process.exit(0)
     if list.length >= 1
       startBot(options, list)
+  .on 'fileExists', (filePath) ->
+    err filePath + " already exists, aborting...", null, '\n'
   .on 'error', (error) ->
     err error,null,'\n'
 

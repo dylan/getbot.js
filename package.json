@@ -6,7 +6,7 @@
   ],
   "name": "getbot",
   "description": "A CLI script for all of your segmented downloading needs.",
-  "version": "0.0.7",
+  "version": "0.0.7a",
   "repository": {
     "type": "git",
     "url": "git://github.com/dylan/getbot.js.git"
@@ -15,7 +15,7 @@
     "getbot": "./bin/getbot"
   },
   "engines": {
-    "node": "~0.6.10"
+    "node": "~0.8.6"
   },
   "keywords": [
     "cli",

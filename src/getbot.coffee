@@ -1,15 +1,17 @@
 util           = require 'util'
-fs             = require 'node-fs'
+fs             = require 'fs'
 path           = require 'path'
 http           = require 'http'
 url            = require 'url'
 request        = require 'request'
+nodeFS         = require 'node-fs'
 {EventEmitter} = require 'events'
 
 class Getbot extends EventEmitter
   constructor: (opts) ->
     
     @destination = opts.destination
+    @forceOverwrite = opts.force
     @maxConnections = opts.connections
 
     options =
@@ -19,23 +21,73 @@ class Getbot extends EventEmitter
     options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
 
     @partsCompleted = 0
-    
+    @origFilename = @newFilename = @fileExt = @fileBasename = @filename = @path = null
+
     if @destination
-      @filename = @destination
-      @path = path.dirname(@destination)
-      if @path
-        @startPath = process.cwd()
-        fs.mkdir @path, 0o0777, true, () =>
-          process.chdir @path
+      # Is this supposed to be a folder?
+      if @destination.charAt(@destination.length-1) is '/'
+        # grab the filename from the url
+        @filename     = decodeURI(url.parse(opts.address).pathname.split("/").pop())
+        @fileExt      = path.extname(@filename)
+        @fileBasename = path.basename(@filename, @fileExt)
+      else
+        @fileExt      = path.extname(@destination)
+        @fileBasename = path.basename(@destination, @fileExt)
+
+      # See if path already exists
+      fs.exists @destination, (exists) =>
+        if exists
+          if @destination.charAt(@destination.length-1) is '/'
+            # Remember where we started
+            @startPath = process.cwd()
+
+            # Change to new path
+            process.chdir @destination
+
+            if !@forceOverwrite
+              # Check to see if the file exists
+              fs.exists process.cwd()+'/'+@fileBasename+@fileExt, (exists) =>
+                if exists
+                  @emit 'fileExists', "#{@destination+@fileBasename+@fileExt}"
+          else
+            if !@forceOverwrite
+              @emit 'fileExists', "#{@destination}"
+            process.chdir path.dirname(@destination)
+        else
+          # Is the destination meant to be a folder?
+          if @destination.charAt(@destination.length-1) is '/'
+            # Remember where we started
+            @startPath = process.cwd()
+
+            # Recursively make folders until the path exists
+            nodeFS.mkdir @destination, 0o777, true, () =>
+              # Change to new path
+              process.chdir @destination
+
+          else
+            if path.dirname(@destination) isnt '.'
+              # Remember where we started
+              @startPath = process.cwd()
+
+              @path = path.dirname(@destination)
+
+              # Recursively make folders until the path exists
+              nodeFS.mkdir @path, 0o777, true, () =>
+                # Change to new path
+                process.chdir @path
+
+        @filename = @origFilename = "#{@fileBasename}#{@fileExt}"
+        @newFilename  = "#{@origFilename}.getbot"
+
     else
-      @filename = decodeURI(url.parse(opts.address).pathname.split("/").pop())
-    
-    @fileExt      = path.extname @filename
-    @fileBasename = path.basename(@filename, @fileExt)
-    @fileDirname  = path.dirname(@filename)
-    @origFilename = "#{@fileBasename}#{@fileExt}"
-    @newFilename  = "#{@origFilename}.getbot"
-    
+      @filename     = decodeURI(url.parse(opts.address).pathname.split("/").pop())
+
+      @fileExt      = path.extname(@filename)
+      @fileBasename = path.basename(@filename, @fileExt)
+
+      @origFilename = "#{@fileBasename}#{@fileExt}"
+      @newFilename  = "#{@origFilename}.getbot"
+
     req = request options, (error, response, body) =>
       if !error
         switch response.statusCode
