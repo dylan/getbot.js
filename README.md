@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/dylan/getbot.js.png)](http://travis-ci.org/dylan/getbot.js)
 # Getbot.js
 ![getbot.js](https://github.com/dylan/getbot.js/raw/master/getbot.gif)
 
