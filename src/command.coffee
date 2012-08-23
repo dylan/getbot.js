@@ -17,7 +17,7 @@ exports.run = ->
     .option('-l, --list [path]', 'a list of urls (one on each line) to read in and download from')
     .option('-q, --quiet', 'run getbot silently')
     .parse(process.argv)
-
+    
     if program.args?.length is 1
       list = [program.args[0]]
     else
@@ -62,11 +62,12 @@ startBot = (options, list) ->
       rate = "#{makeReadable rate}/s"
       bar.tick(data.length, {'rate': rate, 'size': @readableSize})
   .on 'allPartsComplete', () =>
-    if !options.quiet
-      log "Download finished.\n",null, '\n'
-      process.exit(0)
     if list.length >= 1
       startBot(options, list)
+    else
+      if !options.quiet
+        log "Download finished.\n",null, '\n'
+      process.exit(0)
   .on 'fileExists', (filePath) ->
     err filePath + " already exists, aborting...", null, '\n'
   .on 'error', (error) ->
