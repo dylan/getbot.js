@@ -1,12 +1,12 @@
 {
   "author": "BVR Group",
   "contributors": [ 
-    {"name": "John Barker"},
-    {"name": "Dylan Wreggelsworth"}
+    {"name": "Dylan Wreggelsworth"},
+    {"name": "John Barker"}
   ],
   "name": "getbot",
-  "description": "A CLI script for all of your segmented downloading needs.",
-  "version": "0.0.7a",
+  "description": "A CLI script for all of your multipart downloading needs.",
+  "version": "0.0.7b",
   "repository": {
     "type": "git",
     "url": "git://github.com/dylan/getbot.js.git"
@@ -15,10 +15,11 @@
     "getbot": "./bin/getbot"
   },
   "engines": {
-    "node": "~0.8.6"
+    "node": "~0.8.8"
   },
   "keywords": [
     "cli",
+    "multipart",
     "segmented",
     "download",
     "manager"

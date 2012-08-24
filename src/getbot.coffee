@@ -3,6 +3,7 @@ fs             = require 'fs'
 path           = require 'path'
 http           = require 'http'
 url            = require 'url'
+os             = require 'os'
 request        = require 'request'
 nodeFS         = require 'node-fs'
 {EventEmitter} = require 'events'
@@ -10,15 +11,14 @@ nodeFS         = require 'node-fs'
 class Getbot extends EventEmitter
   constructor: (opts) ->
     
-    @destination = opts.destination
+    @destination    = opts.destination
     @forceOverwrite = opts.force
     @maxConnections = opts.connections
+    @listDownload   = opts.listDownload
 
-    options =
+    reqOptions =
       uri: opts.address
-      headers: {}
-      method: 'HEAD'
-    options.auth = "#{opts.user}:#{opts.pass}" if !options.auth
+      auth: "#{opts.user}:#{opts.pass}" if opts.pass
 
     @partsCompleted = 0
     @origFilename = @newFilename = @fileExt = @fileBasename = @filename = @path = null
@@ -88,7 +88,7 @@ class Getbot extends EventEmitter
       @origFilename = "#{@fileBasename}#{@fileExt}"
       @newFilename  = "#{@origFilename}.getbot"
 
-    req = request options, (error, response, body) =>
+    req = request.head reqOptions, (error, response, body) =>
       if !error
         switch response.statusCode
           when 200
@@ -106,11 +106,13 @@ class Getbot extends EventEmitter
                 @emit 'downloadStart', "#{response.statusCode}"
                 fs.open @newFilename,'w', (err, fd) =>
                   fs.truncate fd, @fileSize
-                  @startParts options, @fileSize, @maxConnections, @download
+                  @startParts reqOptions, @fileSize, @maxConnections, @download
               catch error
                 @emit 'error', error
+                
             else
               @emit 'error', "content-length is #{response.headers['content-length']}, aborting..."
+              
           when 400 then @emit 'error', "400 Bad Request"
           when 401 then @emit 'error', "401 Unauthorized"
           else @emit 'error', "#{response.statusCode}"
@@ -120,12 +122,15 @@ class Getbot extends EventEmitter
     req.end()
   
   download: (options, offset, end, number) =>
-    options.headers = {}
-    options.pool = {}
+
     options.method = 'GET'
+    options.headers = {}
     options.headers["range"] = "bytes=#{offset}-#{end}"
+    options.headers['user-agent'] = "Getbot.js/#{options.version} (#{os.type()}/#{os.release()};#{os.arch()} like wget);"
     options.onResponse = true
+    options.pool = {}
     options.pool['maxSockets'] = @maxConnections
+
     partNumber = number
     fops =
       flags: 'r+'
@@ -133,7 +138,7 @@ class Getbot extends EventEmitter
     
     file = fs.createWriteStream(@newFilename,fops)
 
-    req = request options, (error, response) ->
+    req = request.get options, (error, response) ->
       if error
         @emit 'error', error
     .on 'data', (data) =>

@@ -5,9 +5,9 @@ Getbot      = require '../lib/getbot'
 progressbar = require 'progress'
 
 exports.run = ->
-  
+  version = '0.0.7b'
   program
-    .version('0.0.7a')
+    .version(version)
     .usage('[options] <URL>')
     .option('-d, --destination [path]', 'the destination for the downloaded file(s)')
     .option('-f, --force', 'force getbot to overwrite any existing file or folder')
@@ -23,6 +23,7 @@ exports.run = ->
     else
       list = loadList(program.list)
       list.reverse()
+      listDownload = true
 
     options =
       connections : program.connections
@@ -31,6 +32,8 @@ exports.run = ->
       user        : program.user
       pass        : program.pass
       quiet       : program.quiet
+      listDownload: listDownload
+      version     : version
 
     try
       startBot options, list
