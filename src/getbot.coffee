@@ -15,104 +15,34 @@ class Getbot extends EventEmitter
     @forceOverwrite = opts.force
     @maxConnections = opts.connections
     @listDownload   = opts.listDownload
-
-    reqOptions =
+    @statusCode = null
+    @reqOptions =
       uri: opts.address
       auth: "#{opts.user}:#{opts.pass}" if opts.pass
+    @started= false
 
     @partsCompleted = 0
-    @origFilename = @newFilename = @fileExt = @fileBasename = @filename = @path = null
 
-    if @destination
-      # Is this supposed to be a folder?
-      if @destination.charAt(@destination.length-1) is '/'
-        # grab the filename from the url
-        @filename     = decodeURI(url.parse(opts.address).pathname.split("/").pop())
-        @fileExt      = path.extname(@filename)
-        @fileBasename = path.basename(@filename, @fileExt)
-      else
-        @fileExt      = path.extname(@destination)
-        @fileBasename = path.basename(@destination, @fileExt)
-
-      # See if path already exists
-      fs.exists @destination, (exists) =>
-        if exists
-          if @destination.charAt(@destination.length-1) is '/'
-            # Remember where we started
-            @startPath = process.cwd()
-
-            # Change to new path
-            process.chdir @destination
-
-            if !@forceOverwrite
-              # Check to see if the file exists
-              fs.exists process.cwd()+'/'+@fileBasename+@fileExt, (exists) =>
-                if exists
-                  @emit 'fileExists', "#{@destination+@fileBasename+@fileExt}"
-          else
-            if !@forceOverwrite
-              @emit 'fileExists', "#{@destination}"
-            process.chdir path.dirname(@destination)
-        else
-          # Is the destination meant to be a folder?
-          if @destination.charAt(@destination.length-1) is '/'
-            # Remember where we started
-            @startPath = process.cwd()
-
-            # Recursively make folders until the path exists
-            nodeFS.mkdir @destination, 0o777, true, () =>
-              # Change to new path
-              process.chdir @destination
-
-          else
-            if path.dirname(@destination) isnt '.'
-              # Remember where we started
-              @startPath = process.cwd()
-
-              @path = path.dirname(@destination)
-
-              # Recursively make folders until the path exists
-              nodeFS.mkdir @path, 0o777, true, () =>
-                # Change to new path
-                process.chdir @path
-
-        @filename = @origFilename = "#{@fileBasename}#{@fileExt}"
-        @newFilename  = "#{@origFilename}.getbot"
-
-    else
-      @filename     = decodeURI(url.parse(opts.address).pathname.split("/").pop())
-
-      @fileExt      = path.extname(@filename)
-      @fileBasename = path.basename(@filename, @fileExt)
-
-      @origFilename = "#{@fileBasename}#{@fileExt}"
-      @newFilename  = "#{@origFilename}.getbot"
-
-    req = request.head reqOptions, (error, response, body) =>
+    req = request.head @reqOptions, (error, response, body) =>
       if !error
         switch response.statusCode
           when 200
+            @statusCode = response.statusCode
             if response.headers['content-length'] isnt undefined and response.headers['content-length'] isnt 0
-
               if !response.headers['accept-ranges'] or response.headers['accept-ranges'] isnt "bytes"
                 @emit 'noresume', response.statusCode
                 @maxConnections = 1
 
+              # Grab the potential filename from the response if possible
+              @fileName = decodeURI(response.request.uri.pathname.split("/").pop())
               @fileSize = response.headers['content-length']
               @downloadStart = new Date
               @totalDownloaded = 0
 
-              try
-                @emit 'downloadStart', "#{response.statusCode}"
-                fs.open @newFilename,'w', (err, fd) =>
-                  fs.truncate fd, @fileSize
-                  @startParts reqOptions, @fileSize, @maxConnections, @download
-              catch error
-                @emit 'error', error
-                
+              @prepareFile(@fileName)
+
             else
               @emit 'error', "content-length is #{response.headers['content-length']}, aborting..."
-              
           when 400 then @emit 'error', "400 Bad Request"
           when 401 then @emit 'error', "401 Unauthorized"
           else @emit 'error', "#{response.statusCode}"
@@ -120,9 +50,63 @@ class Getbot extends EventEmitter
         @emit 'error', "#{error}"
     
     req.end()
-  
-  download: (options, offset, end, number) =>
 
+
+
+  prepareFile: (fileName) =>
+    if @destination
+      #Is this supposed to be a folder?
+      isFolder = true if @destination.charAt(@destination.length-1) is '/'
+      @startPath = process.cwd()
+      @path = null
+
+      if !isFolder
+        @fileExt = path.extname(@destination)
+        @fileBasename = path.basename(@destination, @fileExt)
+      else
+        @fileExt = path.extname(fileName)
+        @fileBasename = path.basename(fileName, @fileExt)
+
+      fs.exists @destination, (exists)=>
+        if exists and isFolder
+          # Change to new path
+          @openFile(@destination)
+        else if isFolder
+          # Recursively make folders until the path exists
+          nodeFS.mkdir @destination, 0o777, true, () =>
+            @openFile(@destination)
+        else
+          @path = path.dirname @destination
+          if @path isnt @startPath
+            nodeFS.mkdir @path, 0o777, true, ()=>
+              @openFile(@path)
+          else
+            @openFile(@path)
+    else
+      @fileExt = path.extname(fileName)
+      @fileBasename = path.basename(fileName, @fileExt)
+      @openFile(process.cwd())
+
+  openFile: (path) =>
+    try
+      process.chdir path
+    catch error
+      @emit 'error', error
+    
+    @fileName = @origFilename = "#{@fileBasename}#{@fileExt}"
+    @newFilename = "#{@origFilename}.getbot"
+    fs.exists @fileName, (exists)=>
+      if exists
+        if !@forceOverwrite
+          msg = if @destination then "#{@destination}#{@fileName}" else "#{@fileName}"
+          @emit 'fileExists', msg
+      # Smack 'at pig!
+      fs.open @newFilename,'w', (err, fd) =>
+        fs.truncate fd, @fileSize,()=>
+          @startParts @reqOptions, @fileSize, @maxConnections, @download
+
+
+  download: (options, offset, end, number) =>
     options.method = 'GET'
     options.headers = {}
     options.headers["range"] = "bytes=#{offset}-#{end}"
@@ -141,12 +125,15 @@ class Getbot extends EventEmitter
     req = request.get options, (error, response) ->
       if error
         @emit 'error', error
+      @emit 'downloadStart', @statusCode
     .on 'data', (data) =>
       @totalDownloaded += data.length
-      rate = @downloadRate @downloadStart
+      @rate = @downloadRate @downloadStart
       file.write data
-      @emit 'data', data, rate
-      return
+      if !@started
+        @emit 'downloadStart', @statusCode
+        @started = true if @started is false
+      @emit 'data', data, @rate
     .on 'end', () =>
       @partsCompleted++
       @emit 'partComplete', partNumber

@@ -5,7 +5,7 @@ Getbot      = require '../lib/getbot'
 progressbar = require 'progress'
 
 exports.run = ->
-  version = '0.0.7b'
+  version = '0.0.7c'
   program
     .version(version)
     .usage('[options] <URL>')
@@ -48,33 +48,45 @@ startBot = (options, list) ->
   bar = null
   
   #Setup events
-  getbot.on 'noresume', (statusCode) ->
+  getbot
+  .on 'noresume', (statusCode) ->
     log "Resume not supported, using only one connection...", statusCode, '\n'
   .on 'downloadStart', (statusCode) ->
     if !options.quiet
-      log "#{getbot.filename} (#{makeReadable getbot.fileSize})", statusCode, '\n'
+      log "#{getbot.fileName} (#{makeReadable getbot.fileSize})", statusCode, '\n'
       @readableSize = makeReadable(getbot.fileSize)
       bar = new progressbar 'getbot '.green+'    ‹:bar› :percent :size @ :rate',
         complete: "—".green,
         incomplete: ' ',
         width: 20,
         total: parseInt getbot.fileSize, 10
+      update = 0
+      updateTick = setInterval(
+        ()=>
+          rate = "#{makeReadable @rate}/s"
+          bar.tick(@tickBuffer, {'rate': rate, 'size': @readableSize})
+          @tickBuffer = 0
+          if parseInt(getbot.fileSize) is parseInt(getbot.totalDownloaded)
+            log "Download finished.\n",null, '\n'
+            clearInterval(updateTick)
+            process.exit(0)
+      ,500)
     return
   .on 'data', (data, rate) ->
     if !options.quiet
-      rate = "#{makeReadable rate}/s"
-      bar.tick(data.length, {'rate': rate, 'size': @readableSize})
+      @tickBuffer += data.length
+      @totalDL += @tickBuffer
+      return
   .on 'allPartsComplete', () =>
     if list.length >= 1
       startBot(options, list)
     else
-      if !options.quiet
-        log "Download finished.\n",null, '\n'
-      process.exit(0)
+      if options.quiet
+        process.exit(0)
   .on 'fileExists', (filePath) ->
     err filePath + " already exists, aborting...", null, '\n'
-  .on 'error', (error) ->
-    err error,null,'\n'
+  # .on 'error', (error) ->
+  #   err error,null,'\n'
 
 loadList = (filename) ->
   downloadList = []
