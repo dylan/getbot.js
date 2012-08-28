@@ -69,7 +69,6 @@ startBot = (options, list) ->
           if parseInt(getbot.fileSize) is parseInt(getbot.totalDownloaded)
             log "Download finished.\n",null, '\n'
             clearInterval(updateTick)
-            process.exit(0)
       ,500)
     return
   .on 'data', (data, rate) ->
@@ -85,8 +84,8 @@ startBot = (options, list) ->
         process.exit(0)
   .on 'fileExists', (filePath) ->
     err filePath + " already exists, aborting...", null, '\n'
-  # .on 'error', (error) ->
-  #   err error,null,'\n'
+  .on 'error', (error) ->
+    err error,null,'\n'
 
 loadList = (filename) ->
   downloadList = []
