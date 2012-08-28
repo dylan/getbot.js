@@ -5,7 +5,7 @@ Getbot      = require '../lib/getbot'
 progressbar = require 'progress'
 
 exports.run = ->
-  version = '0.0.7c'
+  version = '0.0.7d'
   program
     .version(version)
     .usage('[options] <URL>')

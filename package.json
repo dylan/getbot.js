@@ -6,7 +6,7 @@
   ],
   "name": "getbot",
   "description": "A CLI script for all of your multipart downloading needs.",
-  "version": "0.0.7c",
+  "version": "0.0.7d",
   "repository": {
     "type": "git",
     "url": "git://github.com/dylan/getbot.js.git"
