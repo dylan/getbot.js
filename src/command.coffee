@@ -80,8 +80,8 @@ startBot = (options, list) ->
     if list.length >= 1
       startBot(options, list)
     else
-      if options.quiet
-        process.exit(0)
+      # if options.quiet
+      process.exit(0)
   .on 'fileExists', (filePath) ->
     err filePath + " already exists, aborting...", null, '\n'
   .on 'error', (error) ->
