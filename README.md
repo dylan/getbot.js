@@ -21,6 +21,16 @@ To download a file to a folder, CD into the destination folder and run the follo
 ```
 $ getbot <address>
 ```
+or
+
+```
+$ getbot -d /destination/folder/ <address>
+```
+or
+
+```
+$ getbot -d /destination-filename <address>
+```
 and Bob's your uncle.
 
 To download a file that requires basic HTTP Auth:
@@ -48,4 +58,4 @@ Go ahead and run this now:
 ```
 $ getbot -l <yourfile>
 ```
-and off it goes
+and off it goes!
