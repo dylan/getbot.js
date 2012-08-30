@@ -5,7 +5,7 @@ Getbot      = require '../lib/getbot'
 progressbar = require 'progress'
 
 exports.run = ->
-  version = '0.0.7d'
+  version = '0.0.7e'
   program
     .version(version)
     .usage('[options] <URL>')
@@ -47,6 +47,10 @@ startBot = (options, list) ->
   getbot = new Getbot options
   bar = null
   
+  # Resize progress bar when the term is resized
+  process.stdout.on 'resize', ()=>
+    bar.width = process.stdout.columns-40
+
   #Setup events
   getbot
   .on 'noresume', (statusCode) ->
@@ -58,7 +62,7 @@ startBot = (options, list) ->
       bar = new progressbar 'getbot '.green+'    ‹:bar› :percent :size @ :rate',
         complete: "—".green,
         incomplete: ' ',
-        width: 20,
+        width: process.stdout.columns-40,
         total: parseInt getbot.fileSize, 10
       update = 0
       updateTick = setInterval(
@@ -118,7 +122,7 @@ err = (error, status, prefix) ->
   process.exit(1)
 
 clearLine = () ->
-  process.stdout.write '\r\x33[2K'
+  process.stdout.write '\r\u001b[2K'
 
 clearLines = () ->
-  process.stdout.write '\r\x33[2K\r\x33[1A\r\x33[2K'
+  process.stdout.write '\r\u001b[2K\r\u001b[1A\r\u001b[2K'
