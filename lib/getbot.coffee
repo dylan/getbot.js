@@ -22,7 +22,6 @@ class Getbot extends EventEmitter
     @version         = options.version
     @resumeParts     = {}
     @queue           = []
-    @startPath       = {}
 
     @fileName = @fileExt = @fileBasename = @statusFile = @cycle = @statusFileFD = null
     auth = "#{options.username}:#{options.password}" if options.password
@@ -250,7 +249,6 @@ class Getbot extends EventEmitter
     fs.rename @newFilename, @origFilename, ()=>
       if @startPath
         process.chdir @startPath
-        return
 
   readStatusFile: (callback)=>
     fs.exists(@statusFile, (exists)=>

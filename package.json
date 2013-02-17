@@ -10,9 +10,9 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
-    "node": "~0.8.2"
+    "node": "~0.8.20"
   },
-  "repository": "",
+  "repository": "git://github.com/dylan/getbot.js",
   "keywords": [
     "CLI",
     "multipart",

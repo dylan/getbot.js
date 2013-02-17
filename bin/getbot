@@ -13,17 +13,16 @@ charm   = require('charm')(process)
 
 class GetbotCLI
   constructor: ()->
-    @pace = {}
     program
       .version(pkg.version)
       .usage('[options] <URL>')
       .option('-d, --destination [path]'  , 'the destination for the downloaded file(s)')
       .option('-f, --force'               , 'force getbot to overwrite any existing file or folder', false)
       .option('-l, --list [url1,url2...]' , 'specify a list of files to download')
-      .option('-u, --user [string]'   , 'username used for basic http auth')
-      .option('-p, --pass [string]'   , 'password used for basic http auth')
+      .option('-u, --user [string]'       , 'username used for basic http auth')
+      .option('-p, --pass [string]'       , 'password used for basic http auth')
       .option('-q, --quiet'               , 'run getbot silently', false)
-      .option('-D, --debug'                   , 'print extra stats for getbot', false)
+      .option('-D, --debug'               , 'print extra stats for getbot', false)
       .parse(process.argv)
 
     options =
@@ -49,8 +48,8 @@ class GetbotCLI
     @getbot
     .once 'start',()->
       date = new Date()
-      process.stdout.write "--#{date.toUTCString()}-- #{decodeURI(options.url)}"
-      process.stdout.write "\nSending request, awaiting response... "
+      charm.write "\n  --#{date.toUTCString()}-- #{decodeURI(options.url)}"
+      charm.write "\n  Sending request, awaiting response... "
     .once 'success',(message)=>
       process.stdout.write message+'\n'
       @pace = require('../lib/pace.js')({total:@getbot.fileSize,maxBurden:20})
@@ -63,18 +62,17 @@ class GetbotCLI
       console.log response
       console.log message.stack
     .once 'partsFinished',()=>
-      # console.log @getbot.origFilename
       shasum = crypto.createHash('md5')
       s = fs.createReadStream(@getbot.origFilename)
       s.on 'data', (data)-> shasum.update(data)
-      s.on 'close', ()->
+      s.on 'close', ()=>
         digest = shasum.digest('hex')
-        console.log "\nmd5 checksum: #{digest}"
+        @pace.op(@getbot.totalDownloaded)
+        charm.display('bright').write("\n  md5 checksum: ").display('reset').write("#{digest}\n")
         process.exit()
     .start()
 
   exit: ()=>
-    # @getbot.writeStatusFile()
     charm.display('reset').cursor(true).write('\n\n  Download Canceled.')
     process.exit()
 
