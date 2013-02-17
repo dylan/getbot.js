@@ -1,36 +1,30 @@
 {
-  "author": "BVR Group",
-  "contributors": [ 
-    {"name": "Dylan Wreggelsworth"},
-    {"name": "John Barker"}
-  ],
-  "name": "getbot",
+  "name": "GetBot.js",
+  "preferGlobal": "true",
+  "version": "0.1.0",
   "description": "A CLI script for all of your multipart downloading needs.",
-  "version": "0.0.7e",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/dylan/getbot.js.git"
-  },
   "bin": {
     "getbot": "./bin/getbot"
   },
-  "engines": {
-    "node": "~0.8.8"
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "engines": {
+    "node": "~0.8.2"
+  },
+  "repository": "",
   "keywords": [
-    "cli",
+    "CLI",
     "multipart",
     "segmented",
-    "download",
-    "manager"
+    "download"
   ],
+  "author": "Dylan Wreggelsworth",
   "license": "MIT",
   "dependencies": {
-    "colors": "latest",
-    "commander": "latest",
-    "request": "2.9.3",
-    "progress": "latest",
-    "node-fs": "latest"
-  },
-  "devDependencies": {}
+    "commander"     : "latest",
+    "node-fs"       : "latest",
+    "http-get"      : "latest",
+    "charm"         : "latest"
+  }
 }

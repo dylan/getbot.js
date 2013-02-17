@@ -1,3 +1,83 @@
-#!/usr/bin/env node
+#!/usr/bin/env coffee
 
-require('../lib/command').run();
+process.title = 'getbot'
+
+pkg     = require '../package.json'
+program = require 'commander'
+Getbot  = require '../lib/getbot'
+Utils   = require '../lib/utils'
+crypto  = require 'crypto'
+fs      = require 'fs'
+charm   = require('charm')(process)
+
+
+class GetbotCLI
+  constructor: ()->
+    @pace = {}
+    program
+      .version(pkg.version)
+      .usage('[options] <URL>')
+      .option('-d, --destination [path]'  , 'the destination for the downloaded file(s)')
+      .option('-f, --force'               , 'force getbot to overwrite any existing file or folder', false)
+      .option('-l, --list [url1,url2...]' , 'specify a list of files to download')
+      .option('-u, --user [string]'   , 'username used for basic http auth')
+      .option('-p, --pass [string]'   , 'password used for basic http auth')
+      .option('-q, --quiet'               , 'run getbot silently', false)
+      .option('-D, --debug'                   , 'print extra stats for getbot', false)
+      .parse(process.argv)
+
+    options =
+      url         : null
+      destination : program.destination
+      force       : program.force
+      username    : program.user
+      password    : program.pass
+      quiet       : program.quiet
+      debug       : program.debug
+      version     : pkg.version
+
+    if program.args?.length is 1 and program.list or program.args?.length
+      options.url = program.args[0]
+    else if program.list
+      options.url = program.list.split(',')[0]
+    else
+      program.help()
+      process.exit()
+
+    @getbot = new Getbot(options)
+
+    @getbot
+    .once 'start',()->
+      date = new Date()
+      process.stdout.write "--#{date.toUTCString()}-- #{decodeURI(options.url)}"
+      process.stdout.write "\nSending request, awaiting response... "
+    .once 'success',(message)=>
+      process.stdout.write message+'\n'
+      @pace = require('../lib/pace.js')({total:@getbot.fileSize,maxBurden:20})
+      timer = setInterval(()=>
+        @pace.op(@getbot.totalDownloaded)
+      ,150)
+
+    .once 'error',(message,headers,response)->
+      console.log headers
+      console.log response
+      console.log message.stack
+    .once 'partsFinished',()=>
+      # console.log @getbot.origFilename
+      shasum = crypto.createHash('md5')
+      s = fs.createReadStream(@getbot.origFilename)
+      s.on 'data', (data)-> shasum.update(data)
+      s.on 'close', ()->
+        digest = shasum.digest('hex')
+        console.log "\nmd5 checksum: #{digest}"
+        process.exit()
+    .start()
+
+  exit: ()=>
+    # @getbot.writeStatusFile()
+    charm.display('reset').cursor(true).write('\n\n  Download Canceled.')
+    process.exit()
+
+command = new GetbotCLI()
+charm.removeAllListeners('^C')
+charm.on('^C', command.exit)
