@@ -162,7 +162,7 @@ class Getbot extends EventEmitter
 
       file
       .on 'end', ()=>
-        console.log "#{partNumber} stream closed"
+        # console.log "#{partNumber} stream closed"
         @parts.parts[partNumber].last = @parts.parts[partNumber].end-@parts.parts[partNumber].start
 
 
