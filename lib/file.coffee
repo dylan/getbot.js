@@ -20,5 +20,4 @@ class File extends stream.Writable
       @emit 'end'
       callback()
 
-
 module.exports = File
